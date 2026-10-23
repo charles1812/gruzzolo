@@ -61,6 +61,8 @@
       return j ? json(cut(j, p1, p2)) : json({ chart: { result: null, error: { code: "Not Found" } } }, 404);
     }
     if (/query1\.finance\.yahoo\.com\/v1\/finance\/search/.test(url)) return json({ news: [], quotes: [] });
+    const mi = raw.match(/^https:\/\/www\.mimit\.gov\.it\/images\/exportCSV\/([\w.-]+\.csv)/);
+    if (mi) return realFetch("mimit/" + mi[1]);
     return realFetch(input, init);
   };
 })();

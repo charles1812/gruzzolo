@@ -30,6 +30,13 @@ def main():
                     time.sleep(1.5)
             time.sleep(0.25)
     json.dump({"ts": int(time.time()), "tickers": TICKERS}, open(os.path.join(OUT, "index.json"), "w"))
+    # prezzi dei carburanti del Ministero (Costo della vita): anche questi il browser non li può leggere direttamente
+    try:
+        req = urllib.request.Request("https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv", headers={"User-Agent": "Mozilla/5.0 (gruzzolo demo)"})
+        with urllib.request.urlopen(req, timeout=60) as r: data = r.read()
+        os.makedirs(os.path.join(os.path.dirname(OUT), "mimit"), exist_ok=True)
+        open(os.path.join(os.path.dirname(OUT), "mimit", "prezzo_alle_8.csv"), "wb").write(data); print("carburanti:", len(data), "byte")
+    except Exception as e: print("carburanti non scaricati:", e)
     print(f"prezzi: {ok} file, {bad} mancanti")
 
 if __name__ == "__main__":
