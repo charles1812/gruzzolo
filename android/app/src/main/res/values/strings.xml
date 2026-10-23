@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Gruzzolo Dev</string>
+    <string name="widget_desc">Aggiungi una spesa con un tocco</string>
+    <string name="sc_add">Aggiungi spesa</string>
+    <string name="sc_fuel">Benzina</string>
+    <string name="sc_food">Spesa</string>
+    <string name="listener_label">Gruzzolo: spese dalle notifiche</string>
+</resources>

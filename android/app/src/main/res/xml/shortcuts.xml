@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="add" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/sc_add" android:shortcutLongLabel="@string/sc_add">
+        <intent android:action="it.gruzzolo.OPEN" android:targetPackage="it.gruzzolo.dev" android:targetClass="it.gruzzolo.app.MainActivity">
+            <extra android:name="action" android:value="add"/>
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="benzina" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/sc_fuel" android:shortcutLongLabel="@string/sc_fuel">
+        <intent android:action="it.gruzzolo.OPEN" android:targetPackage="it.gruzzolo.dev" android:targetClass="it.gruzzolo.app.MainActivity">
+            <extra android:name="action" android:value="add:benzina"/>
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="spesa" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/sc_food" android:shortcutLongLabel="@string/sc_food">
+        <intent android:action="it.gruzzolo.OPEN" android:targetPackage="it.gruzzolo.dev" android:targetClass="it.gruzzolo.app.MainActivity">
+            <extra android:name="action" android:value="add:spesa"/>
+        </intent>
+    </shortcut>
+</shortcuts>

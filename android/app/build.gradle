@@ -1,0 +1,73 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Optional release signing: create keystore.properties (see keystore.properties.example)
+def keystorePropsFile = rootProject.file("keystore.properties")
+def hasKeystore = keystorePropsFile.exists()
+def keystoreProps = new Properties()
+if (hasKeystore) { keystoreProps.load(new FileInputStream(keystorePropsFile)) }
+
+android {
+    namespace 'it.gruzzolo.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "it.gruzzolo.dev"
+        minSdk 28
+        targetSdk 35
+        versionCode((int) (System.currentTimeMillis() / 60000L))   // ogni APK è un aggiornamento: si installa sopra senza perdere i dati
+        versionName "1.0." + new Date().format("yyMMdd.HHmm")
+    }
+
+    signingConfigs {
+        // firma fissa per gli APK che installi (debug): copia della chiave in keystore/, mai rigenerarla,
+        // altrimenti gli aggiornamenti dall'app non si installano sopra e i dati andrebbero persi
+        debug {
+            def k = rootProject.file("keystore/gruzzolo-debug.keystore")
+            if (k.exists()) {
+                storeFile k
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+            }
+        }
+        release {
+            if (hasKeystore) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasKeystore) { signingConfig signingConfigs.release }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Prevents the Kotlin stdlib version clash that AndroidX/WorkManager can drag in
+configurations.all {
+    resolutionStrategy {
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10'
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.webkit:webkit:1.11.0'
+    implementation 'androidx.work:work-runtime:2.9.1'
+}

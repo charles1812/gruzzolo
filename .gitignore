@@ -1,0 +1,15 @@
+build/
+.gradle/
+*.apk
+local.properties
+keystore.properties
+*.jks
+.idea/
+__pycache__/
+_site/
+android/app/src/main/assets/config.local.json
+android/keystore/
+server/privato/token.txt
+server/privato/*.json
+!server/privato/storico.json
+tools/cache/
