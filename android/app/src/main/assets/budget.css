@@ -881,3 +881,4 @@ body{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
 .inv-px{display:flex; align-items:center; gap:5px; margin-top:4px; font-size:12px; color:var(--muted)}
 .inv-px input{width:78px; padding:5px 7px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--text); font:inherit; font-size:12px}
 .inv-n{min-width:0}
+.inv-tank{height:130px}

@@ -382,12 +382,18 @@ function potHtml(){
   let st=null, p=null; try{ st=bStatus(); p=planCompute(); }catch(e){}
   if(!st || !p) return bar+fine;
   const key=st.cy.key, first=!!st.P.partial, ch=first?(B.firstInv||{})[key]:null, skip=!first && (B.invSkip||{})[key];
-  const S=Math.max(0,p.S), fund=Math.max(0,first&&ch!=="inv"?S:p.toFund), inv=m.toInvest, row=(l,v,c)=>`<div class="bp-row"><span>${l}</span><b class="num ${c||""}">${money(v)}</b></div>`;
-  let h=`<div class="card inv-card"><div class="bw-h">📈 Questo mese · profilo ${esc(PROFILES[PL.prof].n)}${PL.provisional?" (provvisorio)":""}</div>
-    ${row("🏺 Da mettere da parte",S)}
-    ${row("🛟 Sul conto (liquidità, fondo emergenza)",fund)}
-    ${row("📈 Da investire"+(m.pot>=1?` (con ${m0(m.pot)} dei mesi scorsi)`:""),first&&ch!=="inv"?Math.max(0,m.pot):inv,"gold")}
-    ${m.done>0?row("✅ Già messo da parte o investito",m.done,"pos"):""}
+  const S=Math.max(0,p.S), fund=Math.max(0,first&&ch!=="inv"?S:p.toFund), inv=m.toInvest;
+  // scomparto investimenti: obiettivo = quello che è già investito + quello che resta da investire; scomparto conto: lo segni tu
+  const invT=first&&ch!=="inv"?0:m.done+Math.max(0,m.left), fDone=(B.fundDone||{})[key]?fund:0, invD=Math.min(invT,m.done), tot=fund+invT, filled=fDone+invD;
+  const col=(e,n,d,t,c1,c2)=>{ const f=t>0?Math.max(0,Math.min(1,d/t)):0;
+    return `<div class="t4-col" style="--c1:${c1};--c2:${c2};--h:${(f*100).toFixed(1)}%;flex-grow:${Math.max(0.6,t/(tot||1)*2).toFixed(2)};cursor:default"><div class="fb-liq"><i class="fb-w1"></i><i class="fb-w2"></i><b class="fb-bub"></b><b class="fb-bub"></b><b class="fb-bub"></b></div>
+      <span class="t4-v num">${m0(d)}<small> / ${m0(t)}</small></span><span class="t4-l"><span>${e}</span>${n}</span></div>`; };
+  let h=`<div class="card inv-card"><div class="t4-h"><small>Serbatoio del mese · profilo ${esc(PROFILES[PL.prof].n)}${PL.provisional?" (provvisorio)":""}</small>
+      <b class="num">${m0(filled)} <small style="font-size:.5em">di ${m0(tot)}</small></b>
+      <span>da mettere da parte questo mese: 🛟 ${m0(fund)} sul conto + 📈 ${m0(invT)} da investire${m.pot>=1?` (con ${m0(m.pot)} dei mesi scorsi)`:""}</span></div>
+    ${tot>0?`<div class="t4-tank inv-tank">${col("🛟","Sul conto",fDone,fund,"#7fd6d0","#2f8f8a")}${invT>0?col("📈","Investimenti",invD,invT,"#f2cf82","#b8862f"):""}</div>`:""}
+    ${fund>0?`<button class="add" data-pot="fund" style="margin-top:8px">${fDone?"✓ Messi sul conto · annulla":`✅ Ho messo ${money(fund)} sul conto (fondo emergenza)`}</button>`:""}
+    ${p.repTot>0&&!first?`<p class="bnote" style="margin:4px 0 0">Il Replay compra da solo ${money(p.repTot)} il giorno ${replay.dayOfMonth||1}: è già compreso.</p>`:""}
     ${p.repTot>0&&!first?`<p class="bnote" style="margin:2px 0 0">Il Replay compra da solo ${money(p.repTot)} il giorno ${replay.dayOfMonth||1}: è già compreso.</p>`:""}`;
   if(first && !ch && S>0){
     h+=`<p class="bnote" style="margin:12px 0 6px"><b>Vuoi investire questo mese?</b> È il primo mese: decidi tu. Dal prossimo la divisione la fa il profilo.</p>
@@ -401,7 +407,7 @@ function potHtml(){
   } else if(S>0) h+=`<p class="bnote" style="margin:10px 0 0">${m.done>0?"Questo mese hai già investito la parte prevista.":"Questo mese tutto va sul conto: il fondo emergenza viene prima degli investimenti."}</p>`;
   if(!(first && !ch)) h+=`<p class="bnote" style="margin:8px 0 0">${esc(p.why)}</p>`;
   h+=`</div>`;
-  return (first && !ch ? "" : bar)+h+fine;
+  return h+fine;     // il serbatoio sostituisce la barra «Investimento del mese»
 }
 /* la proposta resta la stessa finché non cambia quanto c'è da investire (così − e + non si perdono) */
 function invEnsure(amt){
@@ -462,6 +468,7 @@ document.addEventListener("click",e=>{
     if(a==="edit"){ const v=prompt("Quanti soldi hai da parte da investire (€)?", String(+PL.pot||0).replace(".",",")); if(v==null) return; PL.pot=r2(Math.max(0,num(v))); plSave(); mountPot(); }
     else if(a==="add"){ const amt=+p.dataset.amt||0; PL.pot=r2((+PL.pot||0)+amt); plSave(); B.potAdd=B.potAdd||{}; B.potAdd[p.dataset.key]={ amt, date:ymd(today0()) }; bSave(); mountPot(); if(typeof renderBudget==="function") renderBudget(); toast("Aggiunti "+money(amt)+" da investire"); }
     else if(a==="buy") openInvest();
+    else if(a==="fund"){ const k=cycleOf().key; B.fundDone=B.fundDone||{}; if(B.fundDone[k]) delete B.fundDone[k]; else B.fundDone[k]=ymd(today0()); bSave(); mountPot(); }
     return; }
   const b=e.target.closest("[data-inv]"); if(!b) return; const a=b.dataset.inv;
   if(a==="skip"||a==="unskip"){ B.invSkip=B.invSkip||{}; const k=cycleOf().key; if(a==="skip") B.invSkip[k]=1; else delete B.invSkip[k]; bSave(); mountPot(); toast(a==="skip"?"Ok: questo mese restano sul conto":"Ecco cosa comprare"); return; }

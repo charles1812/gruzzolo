@@ -402,37 +402,13 @@ function firstMonthHtml(st){
         ${done>0?`<div><small><i class="dot pos"></i>già messo da parte</small><b class="num pos">${m0(done)}</b></div>`:""}
         <div><small><i class="dot pos soft"></i>da mettere da parte</small><b class="num">${m0(P.save)}</b></div></div></div>
     <p class="bnote" style="margin-top:6px">${P.save>0?`Questi <b class="num">${money(P.save)}</b> li ho già tolti dai soldi da spendere: nel Budget vedi solo quello che puoi usare.`:"L'obiettivo del mese è già coperto da quello che avevi messo da parte."}${P.save<P.goal-saveDoneIn(P)-1?` Con i soldi che hai adesso più di così non si riesce (l'obiettivo pieno è ${m0(P.goal)}).`:""}${extra>=5?` Se non spendi tutto il tempo libero avanzano altri ${m0(extra)}.`:""}</p>`;
-  if(P.save>0){
-    if(!ch) h+=`<p class="bnote" style="margin:10px 0 6px"><b>Primo mese: decidi tu.</b> Li tieni tutti sul conto o ne investi una parte? Dal prossimo stipendio la divisione la fa il tuo profilo.</p>
-      <button class="sopt rec" data-b="fminv" data-v="inv"><b>📈 Investine una parte</b><span>Divido tra liquidità e azioni secondo il tuo profilo e ti dico cosa comprare.</span></button>
-      <button class="sopt" data-b="fminv" data-v="keep"><b>💶 Tienili tutti sul conto</b><span>Questo mese niente acquisti: restano come liquidità (fondo emergenza).</span></button>`;
-    else h+=splitHtml(st)+`<button class="add" data-b="fminv" data-v="" style="margin-top:6px">${ch==="inv"?"Preferisco tenerli tutti sul conto":"Preferisco investirne una parte"}</button>`;
-  }
+  if(P.save>0) h+=`<button class="stat-link" data-b="goto" data-v="portafoglio" style="margin-top:8px">🏺 Riempi il serbatoio nel Portafoglio: quanto sul conto e cosa comprare <span>→</span></button>`;
   h+=`<p class="bnote" style="margin-top:8px">Dal prossimo stipendio: <b class="num">${m0(Math.max(0,P.goalNext||0))}</b> al mese.</p></div></section>`;
   return h;
 }
 function saveDoneIn(P){ return P.saved+P.replayRes; }
 /* primo mese: investire o no è una scelta (B.firstInv[mese] = "inv" | "keep"); dal secondo mese decide il profilo */
 function firstChoice(st){ return st && st.P && st.P.partial ? ((B.firstInv||{})[st.cy.key]||null) : "profile"; }
-/* dove vanno i soldi da mettere da parte: liquidità e azioni, con le quote da comprare */
-function splitHtml(st){
-  if(typeof planCompute!=="function" || typeof PL==="undefined") return "";
-  if(!PL.prof){ PL.prof=3; PL.provisional=true; plSave(); }
-  let p=null; try{ p=planCompute(); }catch(e){} if(!p || !(p.S>0)) return "";
-  // le quote sono le stesse che propone «Scegli cosa comprare» (Portafoglio): quote intere verso i pesi del profilo
-  const m=typeof invMonth==="function"?invMonth():null, toInv=m?m.toInvest:0;
-  let L=[]; if(toInv>0 && typeof invCands==="function"){ L=invCands(); invPropose(L,toInv); L=L.filter(x=>x.n>0); }
-  const spent=L.reduce((a,x)=>a+x.n*x.px,0);
-  const buys=L.map(x=>`<div class="bp-row"><span>Compra <b>${x.n} × ${esc(shortName(x.t))}</b> <small>${esc(x.name)}</small></span><b class="num">${money(x.n*x.px)}</b></div>`).join("");
-  return `<div class="split"><div class="eyebrow" style="margin:10px 0 4px">Come li dividi · profilo ${esc(PROFILES[PL.prof].n)}${PL.provisional?" (provvisorio)":""}</div>
-    <div class="bp-row"><span>🛟 Sul conto (fondo emergenza)</span><b class="num">${money(p.toFund)}</b></div>
-    <div class="bp-row"><span>📈 Da investire in ETF${m&&m.pot>=1?` (con ${m0(m.pot)} dei mesi scorsi)`:""}</span><b class="num">${money(toInv)}</b></div>
-    ${buys}
-    ${toInv>0&&!L.length?`<p class="bnote" style="margin:4px 0 0">${p.missingPx.length?"Prezzi non ancora caricati: le quote te le dico appena arrivano.":"Non bastano per una quota intera: si sommano al mese prossimo."}</p>`:""}
-    ${L.length&&toInv-spent>1?`<div class="bp-row"><span>Restano per il prossimo acquisto</span><b class="num">${money(toInv-spent)}</b></div>`:""}
-    <p class="bnote" style="margin:4px 0 0">${esc(p.why)}${PL.provisional?" Il profilo è provvisorio: rispondi alle domande del Piano per averlo su misura.":""}</p>
-    ${L.length?`<button class="btn gold" data-pot="buy" style="margin-top:8px">📈 Scegli cosa comprare</button>`:""}</div>`;
-}
 function saveTankHtml(st){
   if(st.P.partial) return firstMonthHtml(st);
   const P=st.P, F=cyclePlan(st.cy.s), G=Math.max(0,F.save), t0=today0();
@@ -446,7 +422,7 @@ function saveTankHtml(st){
     <div class="tank-row">${ringSvg([{ f:pD, c:"pos" },{ f:pE-pD, c:"pos soft" }], null, pctD+"%", "già da parte", `Risparmio: ${pctD}% fatto, ${pct}% previsto`)}
       <div class="tank-k"><div><small>obiettivo del mese${F.fixed?` (fissato il ${esc(fDay(F.fixed))})`:""}</small><b class="num">${m0(G)}</b></div><div><small><i class="dot pos"></i>già messo da parte</small><b class="num pos">${m0(done)}</b></div><div><small><i class="dot pos soft"></i>a fine mese</small><b class="num">${m0(end)} · ${pct}%</b></div></div></div>
     <p class="bnote" style="margin-top:6px">${end>=G-1?`Sei in linea con l'obiettivo${end>G+1?`, anzi sopra di ${m0(end-G)}`:""}.`:P.partial && st.free>=0 ? `Ti mancano ${m0(G-end)} per l'obiettivo: questo mese sei partito a metà con ${m0(P.net)} sul conto, quindi più di così non si riesce. Dal prossimo stipendio l'obiettivo è pieno.` : `Sei sotto l'obiettivo di ${m0(G-end)}: imprevisti o spese sopra la stima.`}${extra>=5?` Se non spendi tutto il tempo libero arrivi fino a <b class="num">${m0(end+extra)}</b>: quello che avanza lo puoi investire.`:""}${P.partial?" L'obiettivo è sul mese intero: conto anche quello che hai messo da parte prima di installare Gruzzolo.":""}</p>
-    ${splitHtml(st)}
+    <button class="stat-link" data-b="goto" data-v="portafoglio" style="margin-top:8px">🏺 Riempi il serbatoio nel Portafoglio: quanto sul conto e cosa comprare <span>→</span></button>
     <details class="why-d"><summary>Come calcolo l'obiettivo · cambia stipendio</summary>
       <div class="rng" style="margin:6px 0 10px"><input id="netIn" inputmode="decimal" value="${fmtIn(num(B.ans.net))}" aria-label="Stipendio netto"><button class="btn gold" data-b="netSave" style="width:auto;padding:12px 16px">Cambia stipendio</button></div>
       ${row("Stipendio",F.net,"")}${F.buoni>0?row("Buoni pasto",F.buoni,"+"):""}
