@@ -13,7 +13,11 @@ def check(name, ok, info=""):
     results.append((name, bool(ok), info))
     print(("PASS " if ok else "FAIL ") + name + ("  -- " + str(info)[:300] if info else ""), flush=True)
 
-PROFILE = dict(net="1640", payday="4", payday_hi="6", buoni="8", workDays="5", leftNow="663", buoniNow="20", savedNow="307",
+# giorno dello stipendio rispetto a oggi: il primo mese parte sempre a metà (circa due settimane prima del prossimo stipendio),
+# così le prove danno lo stesso risultato in qualsiasi giorno
+import datetime as _dt
+_PD = ((_dt.date.today().day - 15) % 28) + 1
+PROFILE = dict(net="1640", payday=str(_PD), payday_hi=str(min(28, _PD + 2)), buoni="8", workDays="5", leftNow="663", buoniNow="20", savedNow="307",
   affitto="0", bollette="0", bollette_hi="0", internet="0", telefono="32", commute="8", commute_hi="8", fuelExtra="5", fuelExtra_hi="30",
   insAnnual="640", insDue="2027-08-20", kw="66", bolloDue="2026-12-01", maint="300", spesaWeek="50", spesaWeek_hi="80", fuori="40", fuori_hi="80",
   salute="10", salute_hi="25", casaVarie="15", casaVarie_hi="80", weekend="30", weekend_hi="70", shopping="20", shopping_hi="60", abbon="32",
@@ -66,7 +70,7 @@ def main(stage):
             check("Budget: serbatoio diviso nei 4 budget, la somma fa i soldi che restano", r["hasLq"], r["txt"][:120])
             check("finestre dei cerchi (libero, weekend, spesa, ricorrenti, obiettivo) e movimenti nella pagina", len(r["sections"]) == 6, r["sections"])
             check("Budget senza patrimonio", r["noPatr"])
-            check("primo mese: buoni 160 € contati, niente obiettivo di risparmio (solo gestire)", r["partial"] and abs(r["buoni"] - 160) < 0.01 and r["goal"] == 0 and r["save"] == 0 and r["wants"] > 400, {k: r[k] for k in ("buoni", "goal", "save", "wants")})
+            check("primo mese: buoni contati (al massimo i 160 € che hai, non più della spesa dei giorni che restano), niente obiettivo di risparmio", r["partial"] and 100 < r["buoni"] <= 160.01 and r["goal"] == 0 and r["save"] == 0 and r["wants"] > 400, {k: r[k] for k in ("buoni", "goal", "save", "wants")})
             check("conti a tendina", r["fold"])
             check("modalità non più nel Budget", not r["modesInBudget"])
             # spesa con il +: 22,40 € al supermercato con 5 buoni
@@ -150,7 +154,7 @@ def main(stage):
               document.querySelector('[data-pfr="1S"]').click(); await new Promise(r=>setTimeout(r,3000)); out.wk=(PF.data||[]).length;
               out.fz=!!document.getElementById('fzCanvas'); out.fzCap=(document.getElementById('fzCap')||{}).innerText;
               document.querySelector('[data-fz="2"]').click(); await new Promise(r=>setTimeout(r,800)); out.fz20=document.getElementById('fzCap').innerText;
-              await new Promise(r=>setTimeout(r,6000)); const sc=document.getElementById('page-portafoglio').innerText; out.scopri=['Notizie','Idee del momento','Follia'].filter(k=>sc.includes(k)); out.noCome=!sc.includes('Come vanno');
+              await new Promise(r=>setTimeout(r,6000)); const sc=document.getElementById('page-portafoglio').innerText; out.scopri=['Notizie','Idee del momento','Follia'].filter(k=>sc.toLowerCase().includes(k.toLowerCase())); out.noCome=!sc.toLowerCase().includes('come vanno');
               out.spcx=sc.includes('SpaceX');
               showTab('piano'); renderPiano(); await new Promise(r=>setTimeout(r,1500)); const pt=document.getElementById('planBody').innerText; out.piano=pt.slice(0,200);
               out.boost=document.querySelectorAll('#planBody .pn-card').length===5;
@@ -199,7 +203,7 @@ def main(stage):
               fake.canInstall=()=>false; called=null; UPD.busy=false; doUpdate(); out.noPerm=called; UPD.waitPerm=false;
               window.fetch=async()=>({ ok:true, json:async()=>({ code:100, name:"1.0.test", url:"https://x" }) }); await checkUpdate(true); out.same=!!document.getElementById('updBanner');
               updNative=realN; window.fetch=realFetch; return out;""")
-            check("aggiornamento: versione più nuova → avviso con «i tuoi dati restano»", r["banner"] and "dati restano" in r["banner"], r)
+            check("aggiornamento: versione più nuova → avviso con «i tuoi dati restano»", r["banner"] and "dati restano" in r["banner"].lower(), r)
             check("aggiornamento: «Aggiorna» scarica dall'indirizzo pubblicato", r["called"] == "https://example.com/x/g.apk", r)
             check("aggiornamento: senza permesso apre la pagina del permesso", r["noPerm"] == "allow", r)
             check("aggiornamento: stessa versione → nessun avviso", not r["same"], r)

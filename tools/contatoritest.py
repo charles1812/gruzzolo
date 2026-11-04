@@ -74,7 +74,7 @@ with sync_playwright() as p:
 
         # 6) cerchio «Libero» = quello che resta nel Tempo libero
         st = ev("()=>{ const st=bStatus(); return { libero:st.groups.find(g=>g.id==='libero').left }; }")
-        check("cerchio «Libero» in alto = tempo libero rimasto", abs(int(s5["stories"].get("Libero", "0").replace(" €","").replace(".","") or 0) - st["libero"]) <= 1, (st, s5["stories"]))
+        check("cerchio «Libero» in alto = tempo libero rimasto", abs(int({k.capitalize(): v for k, v in s5["stories"].items()}.get("Libero", "0").replace(" €","").replace(".","") or 0) - st["libero"]) <= 1, (st, s5["stories"]))
 
         # 6b) spesa al supermercato con «Conta nel weekend» acceso: esce dal weekend, non dalla spesa
         ev("()=>{ closeSec&&closeSec(); showTab('budget'); }"); time.sleep(0.3)

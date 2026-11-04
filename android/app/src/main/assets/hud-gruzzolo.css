@@ -1,0 +1,213 @@
+/* Gruzzolo in stile HUD (prova, branch prova-hud). Caricato dopo budget.css: cambia solo l'aspetto.
+   Palette della skill grafica-app: teal = ok / sotto budget, ambra = attenzione / azione, rosso = sforato, ciano = dato principale. */
+:root{
+  --ink:#04070B; --surface:#09111A; --surface-2:#0E1A24; --line:#17323D;
+  --text:#D3E9F0; --muted:#5E7884; --faint:#4A626C;
+  --gold:#FFB020; --gain:#1DF2B6; --loss:#FF3B5C; --warn:#FFB020; --alert:#FF3B5C;
+  --c0:#00E5FF; --c1:#1DF2B6; --c2:#8C7CFF; --c3:#FF3B5C; --c4:#1DF2B6; --c5:#FFB020; --c6:#00E5FF; --c7:#8C7CFF;
+  --r:0px; --r-sm:0px;
+  --display:var(--mono); --ui:var(--mono);
+}
+html, body{font-size:13px}
+body{font-family:var(--mono); background:var(--bg); letter-spacing:.01em}
+body.hud{background:
+  radial-gradient(ellipse 120% 60% at 50% 12%, rgba(0,229,255,.06), transparent 70%),
+  radial-gradient(circle, var(--grid) 1.1px, transparent 1.4px) 11px 11px / 22px 22px fixed,
+  var(--bg)}
+body.hud::after{z-index:45}
+
+/* ---------- header ---------- */
+.bar{background:rgba(4,7,11,.92); border-bottom:1px solid var(--line); padding:calc(10px + env(safe-area-inset-top)) 12px 10px; gap:7px}
+.brand{flex:0 1 auto; font-family:var(--mono); font-size:15px; font-weight:700; letter-spacing:2.5px; color:var(--text); white-space:nowrap}
+.brand small{font-family:var(--mono); font-size:9px; letter-spacing:1.5px; color:var(--dim); margin-top:1px}
+.brand .c-cyan{color:var(--cyan)}
+.hud-live{display:flex; align-items:center; gap:5px; margin-left:auto; flex:none}
+.hud-live i{width:7px; height:7px; background:var(--red); animation:hud-blink .7s infinite alternate}
+.hud-live b{font-size:13px; font-weight:500; color:var(--cyan); letter-spacing:.5px}
+.iconbtn{width:34px; height:34px; border-radius:0; border:1px solid var(--line); background:rgba(0,229,255,.04); color:var(--cyan)}
+.iconbtn:hover{background:rgba(0,229,255,.1)}
+.iconbtn svg{width:16px; height:16px}
+#moreBtn::after{border-radius:0 !important}
+
+/* ---------- tab bar con i numeri ---------- */
+.tabbar{border-radius:0 !important; background:rgba(4,7,11,.94) !important; border:0 !important; border-top:1px solid var(--line) !important; box-shadow:none !important; backdrop-filter:none !important}
+.tab{font-family:var(--mono) !important; font-size:9.5px !important; letter-spacing:1.2px; text-transform:uppercase; color:var(--dim) !important; font-weight:500 !important; position:relative}
+.tab svg{display:none}
+.tab .hud-n{display:block; font-size:12px; font-weight:400; color:rgba(94,120,132,.65); letter-spacing:1px; margin-bottom:2px}
+.tab.on{color:var(--text) !important}
+.tab.on .hud-n{color:var(--cyan)}
+.tab.on::before, .tab.on::after{display:none !important}
+.hud-ind{position:absolute; top:-1px; left:0; height:2px; background:var(--cyan); box-shadow:0 0 8px var(--cyan); transition:transform .3s, width .3s; pointer-events:none}
+.tab-add span, .tab.tab-add span{border-radius:0 !important; background:rgba(255,176,32,.14) !important; border:1px solid var(--amber) !important; color:var(--amber) !important; box-shadow:0 0 14px rgba(255,176,32,.25) !important; font-family:var(--mono)}
+
+/* ---------- pannelli: le card diventano pannelli con le staffe ---------- */
+.card{--acc:var(--cyan); position:relative; border-radius:0 !important; background:rgba(9,17,26,.82) !important; border:1px solid var(--line) !important; box-shadow:none !important}
+.card::before{content:""; position:absolute; inset:-1px; pointer-events:none; background-repeat:no-repeat; z-index:1;
+  background-image:linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),
+    linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc));
+  background-size:10px 2px,2px 10px,10px 2px,2px 10px,10px 2px,2px 10px,10px 2px,2px 10px;
+  background-position:top left,top left,top right,top right,bottom left,bottom left,bottom right,bottom right}
+.card.bwarn, .card.warn{--acc:var(--amber)}
+.card.sf-won{--acc:var(--teal)}
+section{padding:0 12px; margin-top:12px; animation:hud-in .55s cubic-bezier(.2,.7,.2,1) both}
+section:nth-of-type(2){animation-delay:70ms} section:nth-of-type(3){animation-delay:140ms} section:nth-of-type(4){animation-delay:210ms}
+section:nth-of-type(5){animation-delay:280ms} section:nth-of-type(6){animation-delay:350ms} section:nth-of-type(7){animation-delay:420ms}
+
+/* ---------- testo ---------- */
+.eyebrow, .sec-title, .txl-h span, .bw-h{font-family:var(--mono); font-size:10px !important; letter-spacing:1.5px; text-transform:uppercase; color:rgba(211,233,240,.85); font-weight:500}
+.eyebrow::before{content:""; display:inline-block; width:3px; height:10px; background:var(--cyan); margin-right:7px; vertical-align:-1px}
+.bw-h{display:flex; align-items:center; gap:7px}
+.bnote, .sub, .hint, .sec-sub, small{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums; letter-spacing:0}
+.pos{color:var(--teal)} .neg{color:var(--red)} .warn{color:var(--amber)}
+h1, h2, h3, .total{font-family:var(--mono) !important; letter-spacing:.5px}
+.total, .t4-h > b, .b4h-n > b{color:var(--cyan); font-weight:700 !important; text-shadow:0 0 12px rgba(0,229,255,.55)}
+.total{font-size:34px}
+.t4-h > b{font-size:34px !important}
+.t4-h small, .b4h-n small{font-family:var(--mono); letter-spacing:1.5px; color:var(--dim)}
+
+/* ---------- pulsanti, pill, campi ---------- */
+.btn{border-radius:0 !important; font-family:var(--mono); text-transform:uppercase; letter-spacing:1px; font-size:13px; font-weight:500;
+  background:rgba(0,229,255,.06); border:1px solid rgba(0,229,255,.6); color:var(--cyan)}
+.btn.gold{background:rgba(255,176,32,.12) !important; border-color:var(--amber) !important; color:var(--amber) !important}
+.btn.gold::before{content:"▶ "}
+.btn.ghost{background:transparent; border-color:var(--line); color:var(--dim)}
+.btn:disabled{opacity:.45}
+.chip, .dchip, .subtab, .seg button, .opt, .qa-cat, .pill{border-radius:0 !important; font-family:var(--mono) !important; text-transform:uppercase; letter-spacing:.8px; font-size:10.5px !important}
+.chip.on, .dchip.on, .subtab.on, .seg button.on, .opt.on{border-color:var(--cyan) !important; background:rgba(0,229,255,.1) !important; color:var(--cyan) !important}
+.dchip{background:rgba(9,17,26,.8); border-color:var(--line)}
+.dchip.pos{color:var(--teal); border-color:rgba(29,242,182,.5); background:rgba(29,242,182,.08)}
+.dchip.neg{color:var(--red); border-color:rgba(255,59,92,.5); background:rgba(255,59,92,.08)}
+input, select, textarea{border-radius:0 !important; font-family:var(--mono) !important; background:#060C12 !important; border:1px solid var(--line) !important; color:var(--text) !important}
+input:focus, select:focus, textarea:focus{outline:none; border-color:var(--cyan) !important; box-shadow:0 0 0 1px rgba(0,229,255,.35)}
+.toggle{border-radius:0 !important} .toggle::after{border-radius:0 !important}
+.stat-link{border-radius:0 !important; font-family:var(--mono); text-transform:uppercase; letter-spacing:1px; font-size:11px}
+
+/* ---------- finestre, toast, banner aggiornamento ---------- */
+.scrim{background:rgba(2,4,7,.8)}
+.sheet{border-radius:0 !important; background:#060C12 !important; border:1px solid var(--line) !important; border-top:2px solid var(--cyan) !important}
+.sec-hd h2, .sheet h2{font-family:var(--mono) !important; font-size:13px !important; letter-spacing:2px; text-transform:uppercase}
+.sec-x{border-radius:0 !important}
+.toast{border-radius:0 !important; font-family:var(--mono); font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase; color:var(--cyan) !important;
+  background:rgba(4,7,11,.96) !important; border:1px solid rgba(0,229,255,.7) !important; box-shadow:0 0 18px rgba(0,229,255,.15)}
+.toast::before{content:"› "}
+.upd-ban{border-radius:0 !important; background:rgba(4,7,11,.96) !important; border:1px solid var(--amber) !important; box-shadow:0 0 0 1px rgba(255,176,32,.15), 0 0 22px rgba(255,176,32,.12) !important}
+.upd-ban .upd-t b{font-family:var(--mono); color:var(--amber); text-transform:uppercase; letter-spacing:1px; font-size:12px}
+.upd-ban .upd-t small{font-family:var(--mono); text-transform:uppercase; letter-spacing:1.2px; font-size:9.5px; color:var(--dim)}
+.upd-ban .upd-go{background:var(--amber) !important; color:var(--bg) !important; border:0 !important; border-radius:0 !important; width:auto}
+.upd-ban .upd-go::before{content:""}
+
+/* ---------- Budget: cerchi, serbatoio a quattro, finestre ---------- */
+.st-ring, .story .ring{border-radius:0 !important}
+.t4{border-radius:0 !important; background:rgba(9,17,26,.82) !important; border:1px solid var(--line) !important}
+.t4::before{display:none}
+.t4-tank{border-radius:0 !important; border:1px solid var(--line) !important; background:repeating-linear-gradient(0deg, transparent 0 21px, rgba(14,34,43,.9) 21px 22px), #050A10 !important; box-shadow:inset 0 0 22px rgba(0,229,255,.06) !important}
+.t4-col{border-left:1px solid var(--line) !important}
+.t4-v{font-family:var(--mono); font-weight:700}
+.t4-l{font-family:var(--mono); text-transform:uppercase; letter-spacing:1px; font-size:9px}
+.t4-col .fb-liq{opacity:.72; filter:saturate(1.3)}
+.t4-col.low{box-shadow:inset 0 0 0 1px var(--red), inset 0 0 16px rgba(255,59,92,.35) !important}
+.b4h{border-radius:0 !important}
+.b4h-bar{border-radius:0 !important; height:8px} .b4h-bar i{border-radius:0 !important}
+.txm, .btx-r{font-family:var(--mono)}
+.bc-e{border-radius:0 !important}
+.ib-item{border-top-color:var(--line)}
+.state{border-radius:0 !important; font-family:var(--mono); text-transform:uppercase; letter-spacing:.8px}
+
+/* ---------- pannelli nuovi (hud-gruzzolo.js) ---------- */
+#hudBud{display:flex; flex-direction:column; gap:10px; padding:0 12px; margin-top:12px}
+#hudBud .hud-panel{padding:12px}
+#hudBud .hud-row > .hud-panel{min-width:0}
+.hb-gauge{max-width:150px; margin:0 auto}
+.hb-state{display:flex; flex-direction:column; gap:6px}
+.hb-state .hud-kv > :first-child{width:78px}
+.hb-state .hud-kv > :last-child{font-size:13px}
+.hb-days{display:flex; align-items:flex-end; gap:4px; height:92px; padding-top:6px; overflow:hidden; border-bottom:1px solid var(--line)}
+.hb-days .d{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; position:relative; min-width:0}
+.hb-days .d i{display:block; width:100%; background:linear-gradient(180deg, var(--c, var(--teal)), rgba(29,242,182,.12)); transform-origin:bottom; animation:hb-grow .7s cubic-bezier(.2,.8,.2,1) both}
+.hb-days .d.today i{--c:var(--cyan); box-shadow:0 0 10px rgba(0,229,255,.5)}
+.hb-days .d.over i{--c:var(--amber)}
+.hb-days .d.over::after{content:""; position:absolute; top:0; width:5px; height:5px; background:var(--red); box-shadow:0 0 6px var(--red)}
+.hb-days .d.zero i{height:2px !important; background:var(--line)}
+@keyframes hb-grow{from{transform:scaleY(0)}}
+.hb-dl{display:flex; gap:4px; margin-top:4px} .hb-dl span{flex:1; text-align:center; font-size:8.5px; color:var(--dim); letter-spacing:0}
+.hb-dl span.t{color:var(--cyan)}
+.hb-cnt{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; text-align:left}
+.hb-cnt .hud-big{font-size:20px}
+.hud-log .r > :nth-child(2){width:44px}
+.hud-log .r > :nth-child(3){flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.hud-log .r > :nth-child(4){flex:none; color:var(--text)}
+.hb-legend{display:flex; gap:12px; margin-top:6px}
+.hb-legend span{display:flex; align-items:center; gap:5px}
+.hb-legend i{width:8px; height:8px; display:inline-block}
+
+@media (prefers-reduced-motion: reduce){ section{animation:none} .hb-days .d i{animation:none} }
+
+/* ---------- ritocchi dopo la prova a 375px ---------- */
+/* spigoli vivi ovunque (pannelli, pill, campi, tessere): lo stile HUD non ha angoli tondi */
+main.page *, .sheet *, .scrim *, #updBanner *{border-radius:0 !important}
+.bar{gap:6px} .brand{font-size:14px; letter-spacing:2px}
+.iconbtn{width:32px; height:32px; flex:none}
+.tab{font-size:8px !important; letter-spacing:.3px !important; overflow:hidden; white-space:nowrap}
+.tab .hud-n{font-size:11px}
+/* cerchi in alto: anelli HUD sottili che girano, il numero in ciano */
+main.page .st-ring{border-radius:50% !important; padding:2px; background:conic-gradient(from 0deg, var(--cyan), transparent 30%, var(--teal) 55%, transparent 80%, var(--cyan)); animation:ringSpin 4.2s linear infinite}
+main.page .st-in{border-radius:50% !important; background:var(--bg); border:2px solid var(--bg)}
+.st-in b{font-family:var(--mono); color:var(--cyan); font-weight:600}
+.story small{font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--dim)}
+.story.seen .st-ring{background:var(--line)}
+/* numeri protagonisti in Piano, Portafoglio, Dati */
+.fz-val > b{font-family:var(--mono) !important; color:var(--cyan); font-weight:700 !important; text-shadow:0 0 12px rgba(0,229,255,.55); letter-spacing:0}
+.fz-val > small, .sc-t, .miss-h{font-family:var(--mono); font-size:10px !important; letter-spacing:1.5px; text-transform:uppercase; color:rgba(211,233,240,.85)}
+.sc-t::before, .miss-h::before{content:""; display:inline-block; width:3px; height:10px; background:var(--cyan); margin-right:7px; vertical-align:-1px}
+.pn-big{font-family:var(--mono) !important; text-shadow:0 0 10px currentColor}
+.pn-g.on, .wkc.now{border-color:var(--amber) !important; background:rgba(255,176,32,.08) !important}
+.miss{border:1px solid var(--line) !important; background:rgba(9,17,26,.82) !important}
+.miss-h span{background:var(--red) !important; color:var(--bg) !important}
+.t4-l{font-size:8px !important; letter-spacing:.2px !important}
+.tab.tab-add{overflow:visible !important}
+
+/* ---------- Piano, Dati, Sfide, Portafoglio ---------- */
+/* selezioni: contorno ciano invece del pieno oro */
+.fz-seg button.on, .st-tabs button.on, .bchips .chip.on, .range.on, .opt.on, .pfc-tabs button.on, .bxv button.on{
+  background:rgba(0,229,255,.12) !important; border:1px solid var(--cyan) !important; color:var(--cyan) !important; box-shadow:0 0 10px rgba(0,229,255,.18)}
+.fz-seg, .st-tabs, .pfc-tabs, .bxv{border-radius:0 !important}
+.st-tabs button, .fz-seg button, .pfc-tabs button, .bxv button{font-family:var(--mono) !important; text-transform:uppercase; letter-spacing:.8px; font-size:10.5px !important}
+.qz-prog span.on, .qz-prog button.on{background:var(--cyan) !important; box-shadow:0 0 6px var(--cyan)}
+.toggle.on{background:rgba(29,242,182,.25) !important; border-color:var(--teal) !important} .toggle.on::after{background:var(--teal) !important}
+.dot-i.on{background:var(--cyan) !important}
+/* tessere che fanno da pannello: staffe agli angoli come le card */
+.pn-card, .sf-c, .wkc, .pn-g{--acc:var(--line); position:relative; border-radius:0 !important; background:rgba(9,17,26,.82) !important; border:1px solid var(--line) !important; box-shadow:none !important}
+.pn-card::after, .sf-c::after, .wkc::after{content:""; position:absolute; inset:-1px; pointer-events:none; background-repeat:no-repeat;
+  background-image:linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),
+    linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc)),linear-gradient(var(--acc),var(--acc));
+  background-size:8px 2px,2px 8px,8px 2px,2px 8px,8px 2px,2px 8px,8px 2px,2px 8px;
+  background-position:top left,top left,top right,top right,bottom left,bottom left,bottom right,bottom right}
+.pn-card{--acc:var(--pc, var(--cyan)); background:linear-gradient(170deg, color-mix(in srgb, var(--pc) 8%, transparent), rgba(9,17,26,.85) 45%) !important}
+.pn-card.on{border-color:var(--pc) !important; box-shadow:0 0 14px color-mix(in srgb, var(--pc) 30%, transparent) !important}
+.sf-c{--acc:var(--amber)}
+.wkc{--acc:var(--teal)} .wkc.now{--acc:var(--amber)} .wkc.past{--acc:var(--dim)}
+/* titoli di sezione in stile etichetta */
+.pn-chh, .fz-who, .fz-ht, .pn-sub{font-family:var(--mono) !important; text-transform:uppercase; letter-spacing:1.5px; font-size:10.5px !important}
+.pn-chh b, .fz-who{color:rgba(211,233,240,.9)}
+.fz-hint, .muted{font-family:var(--mono)}
+/* numeri grandi: glow del colore del dato */
+.pn-big, .sf-hero .fz-val > b, .st-hero .fz-val > b{text-shadow:0 0 10px currentColor}
+.pfc-ch.up, .pfc .up{color:var(--teal)} .pfc-ch.dn, .pfc .dn{color:var(--red)}
+
+/* barra «Investimento del mese» e livello del forziere: barra a riempimento ambra, niente oro lucido */
+.mbar{background:#060C12 !important; border:1px solid rgba(255,176,32,.6) !important}
+.mbar i{background:repeating-linear-gradient(90deg, rgba(255,176,32,.55) 0 10px, rgba(255,176,32,.35) 10px 12px) !important; box-shadow:0 0 14px rgba(255,176,32,.35)}
+.mbar .mb-t{font-family:var(--mono); text-transform:uppercase; letter-spacing:1.2px; font-size:11px; text-shadow:none}
+.mbar .mb-p{font-family:var(--mono); color:var(--amber); text-shadow:0 0 8px rgba(255,176,32,.6)}
+.fz-nl{font-family:var(--mono); text-transform:uppercase; letter-spacing:1px; font-size:10px}
+
+/* prestiti e mutui, azzera tutto */
+.loans{--acc:var(--violet)}
+.loan-tot b{font-family:var(--mono); color:var(--cyan); text-shadow:0 0 10px rgba(0,229,255,.5)}
+.loan-tot small, .loan-g small{font-family:var(--mono); font-size:9.5px; letter-spacing:1.2px; color:var(--dim)}
+.loan-g em{font-family:var(--mono); color:var(--dim)}
+.loan-bar i{background:repeating-linear-gradient(90deg, var(--teal) 0 8px, rgba(29,242,182,.5) 8px 10px) !important; box-shadow:0 0 8px rgba(29,242,182,.4)}
+.btn.danger{background:rgba(255,59,92,.08) !important; border-color:var(--red) !important; color:var(--red) !important}
+.btn.danger::before{content:"▶ "}
+.reset-box .gt{color:var(--red)}

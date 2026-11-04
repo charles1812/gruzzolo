@@ -10,9 +10,9 @@ Non serve installare né scaricare niente: è la stessa app che gira sul telefon
 
 <p>
 <img src="screenshots/budget.png" width="24%" alt="Budget: soldi che restano divisi in quattro">
-<img src="screenshots/da-confermare.png" width="24%" alt="Pagamenti da confermare">
+<img src="screenshots/pannelli.png" width="24%" alt="Budget usato, andamento delle spese e ultimi 14 giorni">
+<img src="screenshots/prestiti.png" width="24%" alt="Prestiti e mutui: rimborsato, rate e interessi">
 <img src="screenshots/portafoglio.png" width="24%" alt="Portafoglio con le pile di monete 3D">
-<img src="screenshots/piano.png" width="24%" alt="Piano di investimento">
 </p>
 
 ---
@@ -31,6 +31,14 @@ Il numero grande in alto è **quanto ti resta sul conto fino al prossimo stipend
 
 Toccando un pezzo si apre la sua finestra: le spese che lo compongono, giorno per giorno, il calendario degli addebiti.
 
+Sotto il serbatoio ci sono i pannelli del mese:
+- un **indicatore** di quanto budget hai già usato: verde se sei sotto, ambra se spendi più in fretta di quanto passa il mese, rosso se sfori;
+- l'**andamento delle spese** degli ultimi 30 giorni;
+- le **barre** degli ultimi 14 giorni;
+- le **ultime spese**, che scorrono come un registro.
+
+Se i soldi sul conto non bastano per le spese fisse fino allo stipendio, il totale lo dice chiaramente: «mancano X €». Non mostra soldi che non ci sono.
+
 ### 📲 Le spese si segnano da sole
 Quando paghi con il telefono o arriva la notifica della banca, Gruzzolo legge **solo quel pagamento** e ti propone la spesa già compilata: importo, negozio e categoria. Tu la confermi con un tocco, anche direttamente dalla notifica. Dopo due conferme uguali per lo stesso negozio, la segna da solo.
 - Se hai pagato in parte con i buoni pasto, te lo chiede.
@@ -39,6 +47,18 @@ Quando paghi con il telefono o arriva la notifica della banca, Gruzzolo legge **
 
 ### 🔁 Abbonamenti e spese ricorrenti
 Per ogni abbonamento metti nome, importo, ogni mese o ogni anno e la data del prelievo. Gruzzolo li tiene nel budget del mese, li mostra in un calendario e, se il pagamento non arriva, ti chiede se è stato pagato. Quelli annuali vengono accantonati un pezzo al mese.
+
+### 🏦 Prestiti e mutui
+Per mutui, prestiti e finanziamenti metti nome, importo prestato, rata al mese e data della prima rata. Ultima rata e tasso (TAN) sono facoltativi. Gruzzolo ti mostra:
+- quanto hai già rimborsato e quanto resta;
+- quante rate hai pagato e quante mancano;
+- quando è iniziato e quando finisce;
+- con il tasso, anche gli interessi pagati e quelli che restano, con l'ammortamento alla francese.
+
+La rata entra da sola nelle spese fisse del mese, con il suo giorno. Se è già contata in «Affitto / mutuo», un interruttore la toglie dal Budget.
+
+### ↺ Ricomincia da capo
+In fondo alle Impostazioni, **Azzera tutto e ricomincia** cancella i dati di questo telefono e riparte dalle domande iniziali. Chiede conferma due volte. Prima puoi salvare una copia con «Backup e ripristino».
 
 ### 🌱 Il primo mese
 Fino al primo stipendio preso con l'app non ti chiede di mettere da parte niente: ti aiuta solo a gestire quello che c'è. Dal mese dopo arriva l'obiettivo di risparmio, calcolato sulle tue spese reali.
@@ -51,6 +71,9 @@ Fino al primo stipendio preso con l'app non ti chiede di mettere da parte niente
 ### 🏆 Sfide e 📊 Dati
 - **Sfide** sono piccoli obiettivi che si verificano da soli dalle spese segnate: giorni senza spese, weekend leggero, settimana con la schiscetta, 52 settimane…
 - **Dati** raccoglie il risparmio nel tempo, il rischio del portafoglio spiegato a parole, i mercati del mondo e il costo della vita (carburante, inflazione, energia).
+
+### 🖥️ La grafica
+Scura, in monospace, come un pannello di controllo: griglia di puntini, pannelli con gli angoli a staffa, numeri importanti in ciano, orologio in alto e schede numerate. I colori hanno un significato: verde = tutto ok, ambra = attenzione, rosso = sforato. Lo stile è in due file a parte, [`hud.css`](android/app/src/main/assets/hud.css) e [`hud-gruzzolo.css`](android/app/src/main/assets/hud-gruzzolo.css), che cambiano solo l'aspetto.
 
 ---
 
@@ -78,6 +101,8 @@ android/                         app Android (Java + WebView)
     forziere.js                  pile di monete 3D e albero olografico (canvas)
     dati.js · stati.js           grafici della scheda Dati
     sfide.js · social.js         sfide e storie in alto
+    hud.css · hud.js             stile HUD e componenti animati (indicatore, oscilloscopio, contatori)
+    hud-gruzzolo.css · .js       il tema HUD applicato a Gruzzolo e i pannelli del Budget
   app/src/main/java/it/gruzzolo/app/
     PaymentListener.java         legge le notifiche di pagamento (NotificationListenerService)
     PaymentParser.java           importo, negozio e categoria dal testo della notifica
@@ -135,7 +160,10 @@ Le prove in `tools/` usano l'app vera su un emulatore Android. Si collegano alla
 - `fulltest.py` (domande iniziali, Budget, schede, notifiche, aggiornamenti);
 - `contatoritest.py` (contatori e weekend);
 - `ricorrentitest.py`, `abbonamentotest.py`, `abbonamentimantest.py` (abbonamenti);
+- `prestititest.py` (prestiti e mutui, con l'ammortamento ricontrollato in Python, e «Azzera tutto»);
 - `sfidetest.py`, `usertest.py`.
+
+Il giorno dello stipendio del profilo di prova si calcola dalla data di oggi, quindi le prove danno lo stesso risultato in qualsiasi giorno. Girano anche su un Chrome senza interfaccia con `--remote-debugging-port=9334`, che apre la versione web.
 
 Dopo ogni azione ricontrollano a mano che la somma dei budget faccia esattamente i soldi rimasti.
 ```bash

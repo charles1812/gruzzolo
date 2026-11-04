@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0F1A1C">
+<meta name="theme-color" content="#04070B">
 <title>Gruzzolo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -330,6 +330,8 @@
   @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
 </style>
 <link rel="stylesheet" href="budget.css">
+<link rel="stylesheet" href="hud.css">
+<link rel="stylesheet" href="hud-gruzzolo.css">
 </head>
 <body>
 
@@ -521,6 +523,12 @@
     </div>
 
     <div class="btn-row"><button class="btn gold" id="saveSet">Salva</button></div>
+
+    <div class="setgroup reset-box">
+      <div class="gt">↺ Ricomincia da capo</div>
+      <p class="hint" style="margin:0 0 10px">Cancella tutto quello che c'è in Gruzzolo su questo telefono: budget, spese, buoni pasto, portafoglio, piano, sfide e impostazioni. Poi riparti dalle domande iniziali. Non si può annullare: se vuoi tenere una copia, fai prima «Backup e ripristino» qui sopra.</p>
+      <button class="btn danger" id="sReset" type="button">Azzera tutto e ricomincia</button>
+    </div>
   </section>
 </main>
 
@@ -2199,6 +2207,8 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ refresh
 <script src="sfide.js"></script>
 <script src="scopri.js"></script>
 <script src="updater.js"></script>
+<script src="hud.js"></script>
+<script src="hud-gruzzolo.js"></script>
 <script>document.body.classList.add("on-money");</script>
 </body>
 </html>

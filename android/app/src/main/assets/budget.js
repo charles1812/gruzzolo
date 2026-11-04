@@ -135,6 +135,7 @@ function buildCats(a){
       { vice:{ price:num(a.vicePrice), perWeek:(pw[0]+pw[1])/2 } });
   }
   if(typeof recCats==="function") recCats().forEach(c=>L.push(c));
+  if(typeof loanCats==="function") loanCats().forEach(c=>L.push(c));
   add("altro","Altro","📦","libere",0);
   add("imprevisto","Imprevisto","⚠️","extra",0);
   // categorie aggiunte a mano restano
@@ -280,7 +281,8 @@ function partialPlan(P, cy, s0){
   const food=B.cats.filter(c=>c.id==="spesa"||c.id==="fuori").reduce((s,c)=>s+c.plan,0)*frac;
   const buoni=Math.min(bN*bVal, food);
   const inv=invSum(s0.date, ymd(cy.e));                      // azioni comprate dopo l'inizio: soldi usciti dal conto e già messi da parte
-  const avail=Math.max(0, s0.left+buoni-needs-rep-inv);
+  // se i soldi di adesso non bastano per le spese fisse fino allo stipendio, quello che manca non deve sparire: lo tengo in short
+  const base=s0.left+buoni-needs-rep-inv, avail=Math.max(0, base), short=Math.max(0, -base);
   const wc=B.cats.filter(c=>c.g==="libere"), tot=wc.reduce((s,c)=>s+(P.per[c.id]||0),0);
   // primo mese (da quando usi Gruzzolo al primo stipendio): niente obiettivo di risparmio, i soldi che restano li impari a gestire.
   // Replay e azioni già comprate restano messi da parte; l'obiettivo pieno parte con il primo stipendio.
@@ -288,7 +290,7 @@ function partialPlan(P, cy, s0){
   const floor=wc.reduce((s,c)=>s+(c.lo!=null?c.lo:c.plan),0)*frac;
   const save=Math.min(target, avail), wants=Math.max(0, avail-save), belowFloor=wants<floor-0.5;
   wc.forEach(c=>per[c.id]= tot>0 ? wants*(P.per[c.id]||0)/tot : (c.id==="altro"?wants:0));
-  return Object.assign({}, P, { per, save, saved, goal:0, goalNext:Math.max(0,cyclePlan(addDays(cy.e,1)).save), net:s0.left, buoni, buoniN:bN, belowFloor, floor, needs, wants, partial:true, replayRes:rep, replayDate:repDate, remDays, startDate:s0.date, inv });
+  return Object.assign({}, P, { per, save, saved, goal:0, goalNext:Math.max(0,cyclePlan(addDays(cy.e,1)).save), net:s0.left, buoni, buoniN:bN, belowFloor, floor, needs, wants, short, partial:true, replayRes:rep, replayDate:repDate, remDays, startDate:s0.date, inv });
 }
 function bStatus(ref){
   const cy=cycleOf(ref), s0=startInfo(cy);
@@ -317,7 +319,8 @@ function bStatus(ref){
   const inv=P.partial ? (P.inv||0) : invSum(ymd(cy.s), ymd(cy.e));
   const invOver=P.partial ? 0 : Math.max(0, inv+((replay&&replay.enabled)?replayCost().total:0)-P.save);
   const deficit=extra+overNeeds+invOver;
-  const free=W-Sw-deficit+credit;              // budget libero rimasto dopo imprevisti e sforamenti, più quello che avanzi sulle necessarie
+  const short=P.short||0;                     // primo mese: soldi che mancano per coprire le spese fisse fino allo stipendio
+  const free=W-Sw-deficit+credit-short;        // budget libero rimasto dopo imprevisti e sforamenti, più quello che avanzi sulle necessarie
   const freePos=Math.max(0,free);
   // quattro budget: Weekend, Tempo libero (un solo salvadanaio per shopping, regali, pranzi fuori, sigarette… lo usi come vuoi),
   // Spesa e Spese ricorrenti. Quello che manca (sforamenti delle necessarie, imprevisti) o che avanza lo divido tra Weekend e
@@ -361,8 +364,13 @@ function bStatus(ref){
   else if(bIn<0 && gOf("spesa")) gOf("spesa").left+=-bIn;      // buoni usati oltre quelli contati: soldi veri risparmiati sulla spesa
   { const g=gOf("spesa"); if(g){ g.s=st_cashSpent(T); g.cap=g.left+g.s; } }
   groups.forEach(g=>{ if(g.id!=="spesa") g.cap=Math.max(g.cap, g.left+g.s); });
-  // soldi veri che restano (sul conto) = somma esatta dei quattro pezzi
-  const remaining=groups.reduce((a,g)=>a+g.left,0)+Math.min(0,free)-bRest;
+  // se il libero è sotto zero (sforamenti oltre il tempo libero, o soldi che non bastano per le fisse) quei soldi mancano davvero:
+  // li tolgo da Spesa e Ricorrenti in proporzione, così i quattro pezzi sommati fanno sempre i soldi veri del conto
+  let miss=Math.max(0,-free)+bRest;
+  { const R2=groups.filter(g=>g.id==="spesa"||g.id==="ric"), tl=R2.reduce((a,g)=>a+g.left,0);
+    if(miss>0.005 && tl>0){ const k=Math.min(1,miss/tl); R2.forEach(g=>{ const x=g.left*k; g.left-=x; miss-=x; }); } }
+  // soldi veri che restano (sul conto) = somma esatta dei quattro pezzi (meno quello che manca anche oltre)
+  const remaining=groups.reduce((a,g)=>a+g.left,0)-Math.max(0,miss);
   const buoniLeft={ n:buoniOn()?B.buoni.bal:0, val:buoniOn()?B.buoni.bal*B.buoni.val:0 };
   const buoniUsed=T.reduce((s,t)=>s+(t.buoniVal||0),0);
   const sal=P.partial ? null : (B.salary||{})[cy.key], salDiff = sal!=null ? sal-P.net : 0;
@@ -370,7 +378,7 @@ function bStatus(ref){
   const savings=P.save+Math.min(0,free)+extraIn+salDiff+buoniDiff+invOver;
   const t0=today0(), daysLeft=Math.max(1,dayDiff(t0,cy.e)+1);
   const spentAll=T.filter(t=>t.type!=="in").reduce((s,t)=>s+t.amt,0);
-  return { cy, P, T, rows, pool, ric, groups, remaining, buoniLeft, bIn, wkW, spesaRow:spR||null, spent, extra, extras, extraIn, overNeeds, deficit, credit, pE, pD, W, Sw, free, savings, daysLeft, perDay:freePos/daysLeft, spentAll, sal, salDiff, buoniDiff, buoniUsed, inv, invOver };
+  return { cy, P, T, rows, pool, ric, groups, remaining, short, buoniLeft, bIn, wkW, spesaRow:spR||null, spent, extra, extras, extraIn, overNeeds, deficit, credit, pE, pD, W, Sw, free, savings, daysLeft, perDay:freePos/daysLeft, spentAll, sal, salDiff, buoniDiff, buoniUsed, inv, invOver };
 }
 
 /* serbatoio del risparmio: obiettivo fisso sul mese intero, si riempie con il Replay e con quello che metti da parte */
@@ -754,6 +762,7 @@ let REC_EDIT=null;   // id in modifica, "new" per una nuova
 function recRows(){
   const L=[];
   B.cats.filter(c=>c.g==="fisse").forEach(c=>{
+    if(c.loan) return;   // le rate si gestiscono in «Prestiti e mutui»
     if(c.rec){ const r=(B.rec||[]).find(x=>x.id===c.rec); if(r) L.push({ key:"r:"+r.id, e:c.e, n:r.n, amt:r.amt, freq:r.freq, day:r.day, month:r.month, mine:true }); return; }
     if(c.sink){ if(!(c.sink.annual>0)) return; const d=c.sink.due?parseYmd(c.sink.due):null; L.push({ key:"c:"+c.id, e:c.e, n:c.n, amt:c.sink.annual, freq:"y", day:d?d.getDate():null, month:d?d.getMonth():null }); return; }
     if(!(c.plan>0)) return; L.push({ key:"c:"+c.id, e:c.e, n:c.n, amt:c.plan, freq:"m", day:c.day||null, est:!c.edited });
@@ -824,6 +833,101 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-rc]"); if
     REC_EDIT=null; toast(`«${n}» salvata: ${money(amt)} ${freq==="y"?`ogni anno il ${day} ${REC_MESI[month]}`:`ogni mese il ${day}`}`); recAfter(); return; }
 });
 
+/* ---------- prestiti e mutui ----------
+   B.loans = [{ id, n, kind:"mutuo"|"prestito"|"auto", amt (capitale prestato), monthly (rata), start (prima rata, ymd),
+                end (ultima rata, ymd, facoltativa), rate (TAN %, facoltativo), budget (la rata conta nel Budget) }]
+   Dalle date si contano le rate già pagate; con il tasso si calcola l'ammortamento alla francese (rata costante,
+   capitale e interessi veri), senza tasso il debito scende di una rata al mese. La rata entra nelle spese fisse. */
+const LOAN_K={ mutuo:["🏠","Mutuo"], prestito:["💳","Prestito"], auto:["🚗","Finanziamento"] };
+function addMonthsD(d,k){ const y=d.getFullYear(), m=d.getMonth()+k, day=d.getDate(); return new Date(y, m, Math.min(day, new Date(y, m+1, 0).getDate())); }
+function monthsBetween(a,b){ return (b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth()); }
+function loanInfo(l){
+  const P=+l.amt||0, M=+l.monthly||0, r=(+l.rate||0)/1200, d0=parseYmd(l.start), t0=today0();
+  let N=null, warn="";
+  if(l.end) N=Math.max(1, monthsBetween(d0, parseYmd(l.end))+1);
+  else if(r>0 && M>0){ if(M<=P*r+0.005){ warn="Con questo tasso la rata copre solo gli interessi: controlla rata e tasso."; N=null; } else N=Math.ceil(-Math.log(1-r*P/M)/Math.log(1+r)); }
+  else if(M>0) N=Math.ceil(P/M);
+  let n=0; while(n<(N||1200) && addMonthsD(d0,n)<=t0) n++;           // rate già scadute (oggi compreso)
+  const bal=k=>{ if(r>0) return Math.max(0, P*Math.pow(1+r,k) - M*(Math.pow(1+r,k)-1)/r); return Math.max(0, P-M*k); };
+  const left=bal(n), repaid=Math.max(0, P-left), paid=n*M, intPaid=Math.max(0, paid-repaid);
+  const totPay=N!=null ? N*M : null, intTot=N!=null && r>0 ? Math.max(0, totPay-P) : null;
+  const done=N!=null && n>=N, next=done?null:addMonthsD(d0,n), last=N!=null?addMonthsD(d0,N-1):null;
+  return { P, M, r, N, n, left:done?0:left, repaid:done?P:repaid, paid, intPaid, totPay, intTot, intLeft:intTot!=null?Math.max(0,intTot-intPaid):null, done, next, last, pct:P>0?Math.min(1,(done?P:repaid)/P):0, warn };
+}
+/* la rata del mese come spesa fissa (con il giorno), finché il prestito non è finito */
+function loanCats(){ return (B.loans||[]).filter(l=>l.budget!==false).map(l=>{ const i=loanInfo(l); if(i.done) return null; const k=LOAN_K[l.kind]||LOAN_K.prestito;
+  return { id:"loan_"+l.id, n:`${k[1]} ${l.n}`.trim(), e:k[0], g:"fisse", plan:r2(+l.monthly||0), day:parseYmd(l.start).getDate(), loan:l.id }; }).filter(Boolean); }
+const mAnno=d=>d.toLocaleDateString("it-IT",{ month:"short", year:"numeric" });
+function loanCardHtml(l){
+  const i=loanInfo(l), k=LOAN_K[l.kind]||LOAN_K.prestito, col=i.done?"var(--gain)":"var(--c1)";
+  return `<div class="loan">
+    <div class="loan-h"><span class="bc-e">${k[0]}</span><span class="txm-n">${esc(l.n||k[1])}<small>${k[1]}${l.rate?` · TAN ${String(l.rate).replace(".",",")}%`:""} · rata ${money(i.M)} il ${parseYmd(l.start).getDate()}</small></span>
+      <b class="num ${i.done?"pos":""}">${i.done?"finito ✓":money(i.left)}</b></div>
+    <div class="b4h-bar loan-bar"><i style="width:${(i.pct*100).toFixed(1)}%;--c1:${col};--c2:${col}"></i></div>
+    <div class="loan-g">
+      <div><small>rimborsato</small><b class="num">${m0(i.repaid)}</b><em>${Math.round(i.pct*100)}% di ${m0(i.P)}</em></div>
+      <div><small>rate pagate</small><b class="num">${i.n}${i.N!=null?` / ${i.N}`:""}</b><em>${i.done?"tutte":i.N!=null?`mancano ${i.N-i.n}`:"durata da completare"}</em></div>
+      <div><small>iniziato</small><b>${esc(mAnno(parseYmd(l.start)))}</b><em>${i.last?(i.done?"finito ":"finisce ")+esc(mAnno(i.last)):"fine non indicata"}</em></div>
+      ${i.r>0?`<div><small>interessi</small><b class="num">${m0(i.intPaid)}</b><em>pagati${i.intLeft!=null?` · ancora ${m0(i.intLeft)}`:""}</em></div>`
+        :`<div><small>pagato finora</small><b class="num">${m0(i.paid)}</b><em>senza tasso: conto solo le rate</em></div>`}
+    </div>
+    ${i.warn?`<p class="bnote warn" style="margin:6px 0 0">${esc(i.warn)}</p>`:""}
+    ${!i.done&&i.next?`<p class="bnote" style="margin:6px 0 0">Prossima rata il ${esc(i.next.toLocaleDateString("it-IT",{ day:"numeric", month:"long" }))}${i.totPay!=null?` · in tutto pagherai ${m0(i.totPay)}`:""}${l.budget===false?" · <b>non conta nel Budget</b>":""}.</p>`:""}
+  </div>`;
+}
+function loansPanelHtml(){ const L=B.loans||[]; if(!L.length) return "";
+  const act=L.map(loanInfo).filter(i=>!i.done), debt=act.reduce((a,i)=>a+i.left,0), rata=act.reduce((a,i)=>a+i.M,0);
+  return `<section><div class="eyebrow" style="margin:0 4px 8px">🏦 Prestiti e mutui</div><div class="card loans">
+    <div class="loan-tot"><div><small>debito che resta</small><b class="num">${m0(debt)}</b></div><div><small>rate al mese</small><b class="num">${money(rata)}</b></div></div>
+    ${L.map(loanCardHtml).join("")}</div></section>`; }
+let LOAN_EDIT=null;
+function loanFormHtml(l){
+  const isNew=!l; l=l||{ n:"", kind:"mutuo", amt:"", monthly:"", start:"", end:"", rate:"", budget:true };
+  const v=x=>x!=null&&x!==""?String(x).replace(".",","):"";
+  return `<div class="recf loanf" data-id="${esc(l.id||"new")}" data-k="${esc(l.kind||"mutuo")}">
+    <div class="fld"><span class="lab">Che cos'è</span><div class="recf-fq">${Object.entries(LOAN_K).map(([k,[e,t]])=>`<button type="button" class="chip ${(l.kind||"mutuo")===k?"on":""}" data-ln="kind" data-v="${k}">${e} ${t}</button>`).join("")}</div></div>
+    <label class="fld"><span class="lab">Nome</span><input class="ln-n" value="${esc(l.n||"")}" placeholder="es. Casa, Auto, Prestito Findomestic" autocomplete="off"></label>
+    <div class="recf-row"><label class="fld"><span class="lab">Importo prestato (€)</span><input class="ln-a" inputmode="decimal" value="${v(l.amt)}" placeholder="150.000"></label>
+      <label class="fld"><span class="lab">Rata al mese (€)</span><input class="ln-m" inputmode="decimal" value="${v(l.monthly)}" placeholder="650"></label></div>
+    <div class="recf-row"><label class="fld"><span class="lab">Prima rata</span><input class="ln-s" type="date" value="${esc(l.start||"")}"></label>
+      <label class="fld"><span class="lab">Ultima rata (facoltativa)</span><input class="ln-e" type="date" value="${esc(l.end||"")}"></label></div>
+    <label class="fld"><span class="lab">Tasso annuo TAN % (facoltativo)</span><input class="ln-r" inputmode="decimal" value="${v(l.rate)}" placeholder="3,2"></label>
+    <div class="switch" style="border-top:none;padding-top:0"><span class="lab">La rata conta nel Budget (spesa fissa del mese)</span><div class="toggle ${l.budget!==false?"on":""}" data-ln="budget"></div></div>
+    <p class="recf-h">Servono nome, importo, rata e la data della prima rata. Con l'ultima rata o il tasso calcolo quanto manca e gli interessi. Se la rata è già in «Affitto / mutuo», spegni l'interruttore.</p>
+    <div class="btn-row" style="margin-top:6px"><button type="button" class="btn ghost" data-ln="cancel">Annulla</button><button type="button" class="btn gold" data-ln="save">Salva</button></div></div>`;
+}
+function loanListHtml(){
+  if(!B.setup) return `<p class="hint" style="margin:0;color:var(--muted);font-size:12px">Rispondi prima alle domande del Budget.</p>`;
+  const L=B.loans||[];
+  return `<p class="hint" style="margin:0 0 10px;color:var(--muted);font-size:12px">Mutui, prestiti e finanziamenti: vedi quanto hai già rimborsato, quanto manca e quando finisce. La rata entra da sola nelle spese fisse del mese.</p>
+    <div class="recl">${L.map(l=>LOAN_EDIT===l.id ? loanFormHtml(l) : (()=>{ const i=loanInfo(l), k=LOAN_K[l.kind]||LOAN_K.prestito;
+      return `<div class="recr"><span class="bc-e">${k[0]}</span><span class="txm-n">${esc(l.n||k[1])}<small>${i.done?"finito":`rata ${money(i.M)} · resta ${m0(i.left)}`}</small></span>
+        <button type="button" class="recb" data-ln="edit" data-id="${esc(l.id)}" aria-label="Modifica ${esc(l.n)}">✎</button><button type="button" class="recb" data-ln="del" data-id="${esc(l.id)}" aria-label="Togli ${esc(l.n)}">✕</button></div>`; })()).join("")}</div>
+    ${LOAN_EDIT==="new" ? loanFormHtml(null) : `<button type="button" class="btn" data-ln="add" style="margin-top:8px">＋ Aggiungi un mutuo o un prestito</button>`}`;
+}
+function renderLoanSettings(){ const h=loanListHtml(); ["sLoans","ricLoans"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=h; }); }
+function loanAfter(){ unfreezePlan(); recalcCats(); bSave(); renderBudget(); renderLoanSettings(); if(typeof renderRecSettings==="function") renderRecSettings(); if(typeof syncNativeCats==="function") syncNativeCats(); }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-ln]"); if(!b) return; const a=b.dataset.ln, box=b.closest(".loanf");
+  if(a==="add"){ LOAN_EDIT="new"; renderLoanSettings(); setTimeout(()=>{ const f=[...document.querySelectorAll(".loanf")].find(x=>x.offsetParent); if(f) f.scrollIntoView({ behavior:"smooth", block:"center" }); },60); return; }
+  if(a==="cancel"){ LOAN_EDIT=null; renderLoanSettings(); return; }
+  if(a==="edit"){ LOAN_EDIT=b.dataset.id; renderLoanSettings(); return; }
+  if(a==="kind"){ if(!box) return; box.dataset.k=b.dataset.v; box.querySelectorAll('[data-ln="kind"]').forEach(x=>x.classList.toggle("on",x===b)); return; }
+  if(a==="budget"){ b.classList.toggle("on"); return; }
+  if(a==="del"){ const l=(B.loans||[]).find(x=>x.id===b.dataset.id); if(!l) return; if(!confirm(`Togliere «${l.n}»?`)) return;
+    B.loans=B.loans.filter(x=>x!==l); if(LOAN_EDIT===l.id) LOAN_EDIT=null; toast(`«${l.n}» tolto`); loanAfter(); return; }
+  if(a==="save"){ if(!box) return; const q=s=>box.querySelector(s).value.trim();
+    const n=q(".ln-n"), amt=r2(num(q(".ln-a"))), monthly=r2(num(q(".ln-m"))), start=q(".ln-s"), end=q(".ln-e"), rate=q(".ln-r")?r2(num(q(".ln-r"))):null;
+    if(!n){ toast("Scrivi il nome"); box.querySelector(".ln-n").focus(); return; }
+    if(!(amt>0)){ toast("Scrivi l'importo prestato"); box.querySelector(".ln-a").focus(); return; }
+    if(!(monthly>0)){ toast("Scrivi la rata al mese"); box.querySelector(".ln-m").focus(); return; }
+    if(!start){ toast("Scegli la data della prima rata"); box.querySelector(".ln-s").focus(); return; }
+    if(end && end<start){ toast("L'ultima rata viene prima della prima"); box.querySelector(".ln-e").focus(); return; }
+    B.loans=B.loans||[]; let l=box.dataset.id==="new"?null:B.loans.find(x=>x.id===box.dataset.id);
+    if(!l){ l={ id:uid("ln") }; B.loans.push(l); }
+    Object.assign(l, { n, kind:box.dataset.k||"prestito", amt, monthly, start, end:end||"", rate:rate>0?rate:null, budget:box.querySelector('[data-ln="budget"]').classList.contains("on") });
+    LOAN_EDIT=null; const i=loanInfo(l); toast(`«${n}»: rimborsato ${m0(i.repaid)} su ${m0(i.P)}`); loanAfter(); return; }
+});
+
 /* una spesa in una riga, toccandola si modifica */
 function txMini(t){ const c=catById(t.cat), moved=budgetCat(t)!==t.cat;
   return `<button class="txm" data-b="edit" data-v="${esc(t.id)}"><span class="bc-e">${c.e}</span><span class="txm-n">${esc(t.note||c.n)}<small>${esc(c.n)}${moved&&budgetCat(t)==="weekend"?" · nel weekend":""} · ${esc(fDay(t.d))}${t.buoniN?` · 🎟️ ${t.buoniN}`:""}</small></span><b class="num">−${money(t.amt)}</b></button>`; }
@@ -884,6 +988,8 @@ function ricHtml(st){
   return b4Head(g, `Sono le spese che tornano tutti i mesi: quelle che cambiano (benzina, salute, casa), quelle fisse e gli accantonamenti per le spese annuali. ${st.P.partial?`Questo mese le conto per i ${st.P.remDays} giorni che mancano allo stipendio.`:""}`)
     + recCalendarHtml(st)
     + `<section id="ricMan"><div class="eyebrow" style="margin:0 4px 8px">✎ I tuoi abbonamenti e le spese ricorrenti</div><div class="card" id="ricRec">${recListHtml()}</div></section>`
+    + loansPanelHtml()
+    + `<section><div class="eyebrow" style="margin:0 4px 8px">✎ I tuoi prestiti e mutui</div><div class="card" id="ricLoans">${loanListHtml()}</div></section>`
     + `<section><div class="card txls">${part("var","⛽ Cambiano ogni mese","")}${part("fix","📌 Fisse","")}${part("acc","🛡️ Accantonamenti","Non le paghi ogni mese: tengo da parte un pezzo al mese, così quando arriva la scadenza i soldi ci sono.")}</div></section>`
     + `<section><div class="eyebrow" style="margin:0 4px 8px">Le spese</div><div class="card txls">${T.length?`<div class="txl">${T.map(txMini).join("")}</div>`:`<p class="bnote" style="margin:0">Ancora nessuna spesa ricorrente segnata.</p>`}</div></section>`;
 }
@@ -1000,7 +1106,8 @@ function renderBudget(){
 
   // stipendio: nei giorni in cui arriva chiedo conferma dell'importo
   const pay=rng(B.ans,"payday"), sinceStart=dayDiff(cy.s,today0());
-  if(st.sal==null && sinceStart<=pay[1]-pay[0]+5){
+  // nel primo mese no: i soldi di partenza li hai scritti tu e lo stipendio di questo mese è già lì dentro (o arriva col prossimo)
+  if(!st.P.partial && st.sal==null && sinceStart<=pay[1]-pay[0]+5){
     h+=`<section><div class="card bplan"><div class="bw-h">💶 È arrivato lo stipendio?</div>
       <p class="bnote" style="margin-top:0">Lo aspetti tra il ${pay[0]} e il ${pay[1]}. Conferma quanto è arrivato: se è diverso dal solito ricalcolo il mese.</p>
       <div class="rng" style="margin-top:10px"><input id="salAmt" inputmode="decimal" value="${fmtIn(num(B.ans.net))}"><button class="btn gold" data-b="salary" style="width:auto;padding:12px 18px">È arrivato</button></div></div></section>`;
@@ -1021,6 +1128,7 @@ function renderBudget(){
   // (dove mettere i risparmi: è nel Piano)
 
   // ricalibrazione: una riga sola
+  if(st.short>0.5) h+=`<section><p class="bnote warn" style="margin:0 4px">⚠️ I soldi sul conto non bastano per le spese fisse fino allo stipendio: mancano <b>${money(st.short)}</b>. Li ho tolti da Spesa e Ricorrenti, così il totale è quello vero; se arrivano altri soldi segnali come entrata.</p></section>`;
   if(st.deficit>0.5) h+=`<section><p class="bnote warn" style="margin:0 4px">⚖️ ${st.extra>0?`Imprevisti ${money(st.extra)}`:""}${st.extra>0&&st.overNeeds>0?" e ":""}${st.overNeeds>0?`spese necessarie sopra la stima ${money(st.overNeeds)}`:""}: li ho tolti da tempo libero e weekend.${st.free<0?` Mancano ${money(-st.free)}: escono dal risparmio.`:""}</p></section>`;
 
   // weekend del mese, spesometri e risparmio in più
@@ -1641,6 +1749,8 @@ document.addEventListener("click",e=>{
     <div class="btn-row" style="margin-top:0"><button class="btn" type="button" data-b="quiz">Rifai le domande</button><button class="btn" type="button" data-b="cats">Categorie</button></div>
     <div class="gt" style="margin-top:18px">🔁 Spese ricorrenti</div>
     <div id="sRec"></div>
+    <div class="gt" style="margin-top:18px">🏦 Prestiti e mutui</div>
+    <div id="sLoans"></div>
     <div class="gt" style="margin-top:18px">Motore</div>
     <div id="sEngine"></div>
     <div class="gt" style="margin-top:8px">Spese automatiche</div>
@@ -1648,7 +1758,7 @@ document.addEventListener("click",e=>{
     <div class="gt" style="margin-top:8px">Dati</div>
     <button class="btn" type="button" data-b="backup">Backup e ripristino</button>
   </div>`);
-  const fill=()=>{ if(typeof renderRecSettings==="function") renderRecSettings(); if(typeof renderAutoSettings==="function") renderAutoSettings(); if(typeof renderEngineSettings==="function") renderEngineSettings(); };
+  const fill=()=>{ if(typeof renderRecSettings==="function") renderRecSettings(); if(typeof renderLoanSettings==="function") renderLoanSettings(); if(typeof renderAutoSettings==="function") renderAutoSettings(); if(typeof renderEngineSettings==="function") renderEngineSettings(); };
   fill();
   document.querySelector('.tab[data-tab="impostazioni"]').addEventListener("click",fill);
 })();
@@ -1817,7 +1927,7 @@ function recalcCats(){
   if(!B.setup || !B.ans || !B.cats || !B.cats.length) return;
   try{
     const old={}; B.cats.forEach(c=>old[c.id]=c);
-    const L=buildCats(B.ans).map(n=>{ const o=old[n.id]; if(!o || n.rec) return n;
+    const L=buildCats(B.ans).map(n=>{ const o=old[n.id]; if(!o || n.rec || n.loan) return n;
       n.n=o.n; if(o.day) n.day=o.day;
       if(n.sink && o.sink){ if(o.sink.due) n.sink.due=o.sink.due;
         if(o.sinkEdited || (n.id!=="bollo" && Math.abs((o.sink.annual||0)-n.sink.annual)>0.5)){ n.sink.annual=o.sink.annual; n.plan=r2(o.sink.annual/12); n.sinkEdited=true; } }
@@ -1835,3 +1945,17 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ recalcC
 // a mezzanotte cambia il giorno: ricalcolo senza aspettare
 let lastDay=ymd(new Date()); setInterval(()=>{ const d=ymd(new Date()); if(d!==lastDay && !document.hidden){ lastDay=d; renderBudget(); if(typeof renderPiano==="function") renderPiano(); } }, 60000);
 if(!B.setup && !store.get("budgetSkip",false)) setTimeout(()=>{ store.set("budgetSkip",true); openQuiz(); },600);
+
+/* ---------- Impostazioni: azzera tutto e ricomincia da capo ----------
+   Cancella i dati di Gruzzolo su questo telefono (budget, spese, buoni, portafoglio, piano, sfide, impostazioni)
+   e i pagamenti in attesa; l'app riparte dalle domande iniziali. */
+document.addEventListener("click",e=>{ if(!e.target.closest("#sReset")) return;
+  if(!confirm("Azzerare Gruzzolo? Si cancellano budget, spese, buoni, portafoglio, piano, sfide e impostazioni di questo telefono. Non si può annullare.")) return;
+  if(!confirm("Sicuro? Dopo riparti dalle domande iniziali, come la prima volta.")) return;
+  try{ if(NAT){ const ids=natPending().map(p=>p.id); if(ids.length) NAT.removePayments(JSON.stringify(ids));
+      if(NAT.setCategories) NAT.setCategories("{}","{}"); if(NAT.setAutoCats) NAT.setAutoCats("{}"); if(NAT.tidyNotifications) NAT.tidyNotifications("[]"); }
+    if(window.GruzzoloNative && GruzzoloNative.cancelReminders) GruzzoloNative.cancelReminders(); }catch(err){}
+  try{ Object.keys(localStorage).filter(k=>k.indexOf("grz")===0).forEach(k=>localStorage.removeItem(k)); }catch(err){}
+  try{ sessionStorage.clear(); }catch(err){}
+  toast("Gruzzolo azzerato: si ricomincia"); setTimeout(()=>location.reload(),600);
+});
