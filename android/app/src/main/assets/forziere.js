@@ -365,25 +365,62 @@ function invMonth(){
   // la parte che va sul conto (fondo emergenza, o primo mese se scegli di non investire) non è da investire
   try{ if(typeof B!=="undefined" && B.setup){ const st=bStatus(); first=!!st.P.partial; done=goalDone(st); G=first?st.P.saved+st.P.replayRes+st.P.save:Math.max(0,cyclePlan(st.cy.s).save);
     let p=null; try{ p=PL.prof?planCompute():null; }catch(e){} if(p) G=Math.max(done, G-p.toFund); else if(first && (B.firstInv||{})[st.cy.key]!=="inv") G=done; } }catch(e){}
-  const pot=Math.max(0,+PL.pot||0), left=Math.max(0,G-done);
+  // il Replay che deve ancora partire compra da solo: non è da comprare a mano
+  let rcP=0; try{ if(!first && typeof replayPending==="function" && replayPending(bStatus())) rcP=replayCost().total; }catch(e){}
+  const pot=Math.max(0,+PL.pot||0), left=Math.max(0,G-done-rcP);
   return { G, done, left, pot, first, toInvest:r2(left+pot), pc:G>0?Math.min(100,Math.round(done/G*100)):0 };
 }
+/* Portafoglio, «Questo mese»: quanto mettere da parte, quanto resta sul conto e quanto investire, con il portafoglio proposto
+   (quote intere verso i pesi del profilo). Sì → «Ho comprato» aggiunge le posizioni; No → restano sul conto. */
 function potHtml(){
   const m=invMonth(), sg=potSuggest();
-  return `<div class="mbar" role="progressbar" aria-valuenow="${m.pc}" aria-valuemin="0" aria-valuemax="100" aria-label="Investimento del mese" data-pot="buy">
-      <i style="width:${m.pc}%"></i><span class="mb-t">Investimento del mese</span><b class="mb-p num">${m.pc}%</b></div>
-    <div class="inv-sub"><div><b class="num">${m0(m.done)}</b> <span>di ${m0(m.G)} investiti</span>${m.pot>=1?`<small>+ ${money(m.pot)} avanzati dai mesi scorsi</small>`:""}</div>
-      <div class="inv-r2"><small>da investire</small><b class="num">${m0(m.toInvest)}</b></div>
-      <button class="btn ${m.toInvest>0?"gold":"ghost"} pot-buy" data-pot="buy" ${m.toInvest>0?"":"disabled"}>Scegli cosa comprare</button></div>
-    ${firstAsk()}
-    ${sg&&sg.amt>0?`<button class="sopt rec" data-pot="add" data-key="${sg.key}" data-amt="${sg.amt}"><span class="sbadge">fine mese</span><b>➕ Tieni da investire i risparmi di ${esc(sg.name)}: ${money(sg.amt)}</b><span>Quello che hai messo da parte e non hai ancora investito.</span></button>`:""}`;
+  const bar=`<div class="mbar" role="progressbar" aria-valuenow="${m.pc}" aria-valuemin="0" aria-valuemax="100" aria-label="Investimento del mese">
+      <i style="width:${m.pc}%"></i><span class="mb-t">Investimento del mese</span><b class="mb-p num">${m.pc}%</b></div>`;
+  const fine=sg&&sg.amt>0?`<button class="sopt rec" data-pot="add" data-key="${sg.key}" data-amt="${sg.amt}"><span class="sbadge">fine mese</span><b>➕ Tieni da investire i risparmi di ${esc(sg.name)}: ${money(sg.amt)}</b><span>Quello che hai messo da parte e non hai ancora investito.</span></button>`:"";
+  if(typeof B==="undefined" || !B.setup) return bar+`<p class="bnote">Rispondi alle domande del Budget: ti dico ogni mese quanto mettere da parte e cosa comprare.</p>`;
+  if(!PL.prof){ PL.prof=3; PL.provisional=true; plSave(); }
+  let st=null, p=null; try{ st=bStatus(); p=planCompute(); }catch(e){}
+  if(!st || !p) return bar+fine;
+  const key=st.cy.key, first=!!st.P.partial, ch=first?(B.firstInv||{})[key]:null, skip=!first && (B.invSkip||{})[key];
+  const S=Math.max(0,p.S), fund=Math.max(0,first&&ch!=="inv"?S:p.toFund), inv=m.toInvest, row=(l,v,c)=>`<div class="bp-row"><span>${l}</span><b class="num ${c||""}">${money(v)}</b></div>`;
+  let h=`<div class="card inv-card"><div class="bw-h">📈 Questo mese · profilo ${esc(PROFILES[PL.prof].n)}${PL.provisional?" (provvisorio)":""}</div>
+    ${row("🏺 Da mettere da parte",S)}
+    ${row("🛟 Sul conto (liquidità, fondo emergenza)",fund)}
+    ${row("📈 Da investire"+(m.pot>=1?` (con ${m0(m.pot)} dei mesi scorsi)`:""),first&&ch!=="inv"?Math.max(0,m.pot):inv,"gold")}
+    ${m.done>0?row("✅ Già messo da parte o investito",m.done,"pos"):""}
+    ${p.repTot>0&&!first?`<p class="bnote" style="margin:2px 0 0">Il Replay compra da solo ${money(p.repTot)} il giorno ${replay.dayOfMonth||1}: è già compreso.</p>`:""}`;
+  if(first && !ch && S>0){
+    h+=`<p class="bnote" style="margin:12px 0 6px"><b>Vuoi investire questo mese?</b> È il primo mese: decidi tu. Dal prossimo la divisione la fa il profilo.</p>
+      <div class="btn-row" style="margin-top:0"><button class="btn gold" data-b="fminv" data-v="inv">Sì, dimmi cosa comprare</button><button class="btn ghost" data-b="fminv" data-v="keep">No, tienili sul conto</button></div>`;
+  } else if((first && ch==="keep") || skip){
+    h+=`<p class="bnote" style="margin:10px 0 4px">Questo mese non investi: i soldi restano sul conto.</p><button class="add" ${first?`data-b="fminv" data-v="inv"`:`data-inv="unskip"`}>Cambia idea: dimmi cosa comprare</button>`;
+  } else if(inv>0){
+    invEnsure(inv);
+    if(!INV.L.length) h+=`<p class="bnote" style="margin:10px 0 0">Prezzi non ancora caricati: le quote te le dico appena arrivano.</p>`;
+    else h+=`<div id="invInline">${invListHtml(true)}</div>`;
+  } else if(S>0) h+=`<p class="bnote" style="margin:10px 0 0">${m.done>0?"Questo mese hai già investito la parte prevista.":"Questo mese tutto va sul conto: il fondo emergenza viene prima degli investimenti."}</p>`;
+  if(!(first && !ch)) h+=`<p class="bnote" style="margin:8px 0 0">${esc(p.why)}</p>`;
+  h+=`</div>`;
+  return (first && !ch ? "" : bar)+h+fine;
 }
-/* primo mese: se investire una parte di quello che metti da parte lo scegli tu (anche da qui) */
-function firstAsk(){
-  try{ const st=bStatus(); if(!st.P.partial || !(st.P.save>0) || (B.firstInv||{})[st.cy.key]) return "";
-    return `<p class="bnote" style="margin:10px 2px 6px">Primo mese: devi mettere da parte <b class="num">${money(st.P.save)}</b>. Li tieni sul conto o ne investi una parte?</p>
-      <button class="sopt rec" data-b="fminv" data-v="inv"><b>📈 Investine una parte</b><span>Ti propongo le quote da comprare secondo il tuo profilo.</span></button>
-      <button class="sopt" data-b="fminv" data-v="keep"><b>💶 Tienili tutti sul conto</b><span>Questo mese niente acquisti.</span></button>`; }catch(e){ return ""; }
+/* la proposta resta la stessa finché non cambia quanto c'è da investire (così − e + non si perdono) */
+function invEnsure(amt){
+  const k=(typeof cycleOf==="function"?cycleOf().key:"")+"|"+r2(amt)+"|"+holdings.map(h=>h.ticker+h.qty).join(",");
+  if(INV && INV.key===k) return INV;
+  const L=invCands(); invPropose(L, amt); INV={ L, pot:amt, key:k }; return INV;
+}
+/* elenco delle quote da comprare, con il prezzo che puoi correggere (quello pagato davvero) */
+function invListHtml(inline){
+  const spent=INV.L.reduce((a,x)=>a+x.n*x.px,0), left=INV.pot-spent;
+  return `<div class="eyebrow" style="margin:12px 0 2px">Il portafoglio che ti propongo: compra</div>
+    ${INV.L.map((x,i)=>`<div class="inv-r"><div class="inv-n"><b>${x.n} × ${esc(shortName(x.t))}</b><small>${esc(x.name)}${x.goal>0?` · obiettivo ${Math.round(x.goal*100)}%`:""}</small>
+        <label class="inv-px"><span>a</span><input inputmode="decimal" data-invpx="${i}" value="${String(r2(x.px)).replace(".",",")}" aria-label="Prezzo di ${esc(shortName(x.t))}"><span>€ · ${money(x.n*x.px)}</span></label></div>
+      <div class="inv-s"><button data-inv="-" data-i="${i}" ${x.n?"":"disabled"} aria-label="Una quota in meno">−</button><b class="num">${x.n}</b><button data-inv="+" data-i="${i}" ${x.px<=left+0.001?"":"disabled"} aria-label="Una quota in più">+</button></div></div>`).join("")}
+    <div class="bp-row" style="margin-top:8px"><span>Spendi</span><b class="num">${money(spent)}</b></div>
+    <div class="bp-row"><span>Restano da investire</span><b class="num ${left<0?"neg":""}">${money(left)}</b></div>
+    <p class="bnote">Compra queste quote dalla tua app (Fineco); se il prezzo pagato è diverso correggilo. Poi conferma: le aggiungo al portafoglio.</p>
+    <div class="btn-row"><button class="btn gold" data-inv="ok" ${spent>0&&left>=-0.01?"":"disabled"}>✅ Ho comprato: aggiungi al portafoglio</button></div>
+    ${inline?`<button class="btn ghost" ${(()=>{ try{ return bStatus().P.partial; }catch(e){ return false; } })()?`data-b="fminv" data-v="keep"`:`data-inv="skip"`} style="margin-top:8px">Non questo mese</button>`:`<button class="btn ghost" data-inv="close" style="margin-top:10px">Non ora</button>`}`;
 }
 function mountPot(){ const h=document.getElementById("potHost"); if(!h) return; if(typeof PL==="undefined"){ h.innerHTML=""; return; } h.innerHTML=potHtml(); }
 
@@ -406,8 +443,7 @@ function invPropose(L, money0){
 }
 function openInvest(){
   const pot=invMonth().toInvest; if(!(pot>0)){ toast("Questo mese non c'è niente da investire"); return; }
-  const L=invCands(); if(!L.length){ toast("Prezzi non ancora caricati: riprova tra poco"); return; }
-  invPropose(L, pot); INV={ L, pot };
+  invEnsure(pot); if(!INV.L.length){ toast("Prezzi non ancora caricati: riprova tra poco"); return; }
   let s=document.getElementById("invScrim");
   if(!s){ s=document.createElement("div"); s.className="scrim"; s.id="invScrim";
     s.innerHTML=`<div class="sheet"><div class="sec-hd"><h2>📈 Cosa compro</h2><button class="sec-x" data-inv="close" aria-label="Chiudi">✕</button></div><div id="invBody"></div></div>`;
@@ -415,17 +451,11 @@ function openInvest(){
   invRender(); s.classList.add("open");
 }
 function invRender(){
-  const b=document.getElementById("invBody"); if(!b||!INV) return;
-  const spent=INV.L.reduce((a,x)=>a+x.n*x.px,0), left=INV.pot-spent;
-  b.innerHTML=`<p class="hint" style="margin:0 0 10px">Hai <b class="num">${money(INV.pot)}</b> da investire. Ti propongo quote intere verso i pesi del tuo piano: cambia con − e +.</p>
-    ${INV.L.map((x,i)=>`<div class="inv-r"><div class="inv-n"><b>${esc(shortName(x.t))}</b><small>${esc(x.name)} · ${money(x.px)} a quota${x.goal>0?` · obiettivo ${Math.round(x.goal*100)}%`:""}</small></div>
-      <div class="inv-s"><button data-inv="-" data-i="${i}" ${x.n?"":"disabled"}>−</button><b class="num">${x.n}</b><button data-inv="+" data-i="${i}" ${x.px<=left+0.001?"":"disabled"}>+</button></div></div>`).join("")}
-    <div class="bp-row" style="margin-top:8px"><span>Spendi</span><b class="num">${money(spent)}</b></div>
-    <div class="bp-row"><span>Restano da investire</span><b class="num ${left<0?"neg":""}">${money(left)}</b></div>
-    <p class="bnote">Compra queste quote dalla tua app (Fineco) e poi conferma qui: aggiungo le monete al forziere e tolgo la spesa dal salvadanaio.</p>
-    <div class="btn-row"><button class="btn gold" data-inv="ok" ${spent>0&&left>=-0.01?"":"disabled"}>Ho comprato: aggiorna</button></div>
-    <button class="btn ghost" data-inv="close" style="margin-top:10px">Non ora</button>`;
+  if(!INV) return;
+  const b=document.getElementById("invBody"); if(b) b.innerHTML=`<p class="hint" style="margin:0 0 10px">Hai <b class="num">${money(INV.pot)}</b> da investire. Ti propongo quote intere verso i pesi del tuo piano: cambia con − e +.</p>`+invListHtml(false);
+  const h=document.getElementById("invInline"); if(h) h.innerHTML=invListHtml(true);
 }
+document.addEventListener("change",e=>{ const i=e.target.closest("[data-invpx]"); if(!i||!INV) return; const x=INV.L[+i.dataset.invpx], v=num(i.value); if(x && v>0) x.px=v; invRender(); });
 document.addEventListener("click",e=>{
   const p=e.target.closest("[data-pot]");
   if(p){ const a=p.dataset.pot;
@@ -433,8 +463,10 @@ document.addEventListener("click",e=>{
     else if(a==="add"){ const amt=+p.dataset.amt||0; PL.pot=r2((+PL.pot||0)+amt); plSave(); B.potAdd=B.potAdd||{}; B.potAdd[p.dataset.key]={ amt, date:ymd(today0()) }; bSave(); mountPot(); if(typeof renderBudget==="function") renderBudget(); toast("Aggiunti "+money(amt)+" da investire"); }
     else if(a==="buy") openInvest();
     return; }
-  const b=e.target.closest("[data-inv]"); if(!b||!INV) return; const a=b.dataset.inv;
-  if(a==="close"){ document.getElementById("invScrim").classList.remove("open"); return; }
+  const b=e.target.closest("[data-inv]"); if(!b) return; const a=b.dataset.inv;
+  if(a==="skip"||a==="unskip"){ B.invSkip=B.invSkip||{}; const k=cycleOf().key; if(a==="skip") B.invSkip[k]=1; else delete B.invSkip[k]; bSave(); mountPot(); toast(a==="skip"?"Ok: questo mese restano sul conto":"Ecco cosa comprare"); return; }
+  if(!INV) return;
+  if(a==="close"){ const s=document.getElementById("invScrim"); if(s) s.classList.remove("open"); return; }
   if(a==="+"||a==="-"){ const x=INV.L[+b.dataset.i]; x.n=Math.max(0,x.n+(a==="+"?1:-1)); invRender(); return; }
   if(a==="ok"){ const buys=INV.L.filter(x=>x.n>0), spent=buys.reduce((s,x)=>s+x.n*x.px,0); if(!buys.length) return;
     // prima uso gli avanzi dei mesi scorsi; il resto è risparmio di questo mese investito (conta nella barra e nel Budget)
@@ -442,7 +474,7 @@ document.addEventListener("click",e=>{
     if(rest>0.005 && typeof B!=="undefined" && B.setup){ B.inv=B.inv||[]; const k=buys.length===1?buys[0]:null;
       B.inv.push({ id:"iv"+Date.now(), d:ymd(today0()), t:k?k.t:buys.map(x=>shortName(x.t)).join("+"), n:k?k.n:buys.reduce((a,x)=>a+x.n,0), amt:rest }); bSave(); if(typeof renderBudget==="function") renderBudget(); }
     PL.potLog=PL.potLog||[]; PL.potLog.push({ date:ymd(today0()), buys:buys.map(x=>({ t:x.t, n:x.n, px:r2(x.px) })) }); plSave();
-    document.getElementById("invScrim").classList.remove("open");
+    { const s=document.getElementById("invScrim"); if(s) s.classList.remove("open"); } INV=null;
     addBuys(buys.map(x=>({ t:x.t, n:x.n, px:x.px, name:x.name })));
     toast("Fatto: "+buys.map(x=>`+${x.n} ${shortName(x.t)}`).join(", ")); }
 });
