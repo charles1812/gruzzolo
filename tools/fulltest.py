@@ -63,7 +63,7 @@ def main(stage):
             r = run(page, """
               showTab('budget'); renderBudget(); await new Promise(r=>setTimeout(r,800));
               const st=bStatus(), P=st.P, txt=document.getElementById('budBody').innerText;
-              return { free:st.free, goal:P.goal, save:P.save, wants:P.wants, buoni:P.buoni, partial:P.partial, hasLq:document.querySelectorAll('.t4-tank .t4-col').length===4 && Math.abs(bStatus().remaining-bStatus().groups.reduce((a,g)=>a+g.left,0))<0.01,
+              return { free:st.free, goal:P.goal, save:P.save, wants:P.wants, buoni:P.buoni, partial:P.partial, hasLq:document.querySelectorAll('#page-budget .t4-tank .t4-col').length===4 && Math.abs(bStatus().remaining-bStatus().groups.reduce((a,g)=>a+g.left,0))<0.01,
                 sections:['libero','weekend','spesa','ric','goal'].filter(k=>(BX_SEC[k]||'').length>50).concat(document.getElementById('bx-mov')?['mov']:[]), fold:(BX_SEC.goal||'').includes('bfold'),
                 noPatr:!txt.includes('Il tuo patrimonio'),
                 modesInBudget:txt.includes('Massimo') && txt.includes('50/30/20'), txt:txt.slice(0,400) };""")

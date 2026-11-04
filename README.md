@@ -163,6 +163,7 @@ Le prove in `tools/` usano l'app vera su un emulatore Android. Si collegano alla
 - `contatoritest.py` (contatori e weekend);
 - `ricorrentitest.py`, `abbonamentotest.py`, `abbonamentimantest.py` (abbonamenti);
 - `prestititest.py` (prestiti e mutui, anche dal foglio «aggiungi spesa», con l'ammortamento ricontrollato in Python, e «Azzera tutto»);
+- `strategiatest.py` (strategia: numeri dei 5 profili e di quello su misura ricalcolati in Python sugli stessi mesi, backtest dei versamenti, «Applica», avviso di rischio);
 - `primomesetest.py` (risparmio tolto dai soldi da spendere, scelta del primo mese, quote da comprare, Replay dal mese prossimo);
 - `sfidetest.py`, `usertest.py`.
 

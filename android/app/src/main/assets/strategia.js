@@ -118,7 +118,9 @@ function stratFan(q, v0, M, inf, HZ, G){
 /* ---------- pagina ---------- */
 function stHtml(M, G, HZ, v0, inf){
   if(STG.q==null) STG.q = PL.provisional ? (PL.pick||3) : PL.prof;
-  if(!STG.cw) STG.cw = Object.assign({ SWDA:0, EIMI:0, AGGH:0, XEON:0 }, PL.cw || PROFILES[Math.min(5,PL.prof||3)].w);
+  if(!STG.cw){ STG.cw = Object.assign({ SWDA:0, EIMI:0, AGGH:0, XEON:0 }, PL.cw || PROFILES[Math.min(5,PL.prof||3)].w);
+    // i cursori vanno a passi di 5: arrotondo e rimetto la somma a 100 sulla voce più grande
+    ST_KEYS.forEach(k=>STG.cw[k]=Math.round(STG.cw[k]/5)*5); const big=ST_KEYS.slice().sort((a,b)=>STG.cw[b]-STG.cw[a])[0]; STG.cw[big]+=100-ST_KEYS.reduce((a,k)=>a+STG.cw[k],0); STG.touch=[]; }
   if(STG.q===6) stSetCustom(STG.cw);
   const q=STG.q, mine=!PL.provisional ? PL.prof : null, sc=(typeof riskScore==="function") ? riskScore(PL.ans) : null, sug=sc?sc.prof:null;
   let h=`<section id="stTool"><div class="hud-panel st-hd" style="--i:0"><div class="hud-ph"><span class="t">strategia // portafoglio modello</span><span class="tag">${HIST?`backtest ${HIST.months[0].slice(0,4)}–${HIST.to.slice(0,4)} · ${HIST.months.length} mesi`:"storico in arrivo"}</span></div>
@@ -201,10 +203,14 @@ function stRefresh(){ const el=document.getElementById("stLive"); if(!el) return
   el.innerHTML=stLiveHtml(M, G, PL.hz||20, totals().val+((+PL.pot)||0), IN.r); }
 let stRaf=0;
 document.addEventListener("input",e=>{ const r=e.target.closest("[data-stw]"); if(!r) return;
-  // un peso cambia: gli altri si adattano in proporzione, così la somma resta 100
-  const k=r.dataset.stw, v=Math.round(+r.value/5)*5, others=ST_KEYS.filter(x=>x!==k), rest=others.reduce((a,x)=>a+(STG.cw[x]||0),0);
-  STG.cw[k]=v; let left=100-v;
-  others.forEach((x,i)=>{ const nv=i===others.length-1?left:Math.round((rest>0?(STG.cw[x]||0)/rest:1/others.length)*(100-v)/5)*5; STG.cw[x]=Math.max(0,Math.min(left,nv)); left-=STG.cw[x]; });
+  // un peso cambia: la differenza la prendono (o la ricevono) prima i pesi che non hai ancora toccato, così quelli già sistemati restano
+  const k=r.dataset.stw, v=Math.round(+r.value/5)*5; STG.touch=(STG.touch||[]).filter(x=>x!==k); STG.touch.push(k);
+  STG.cw[k]=v; let diff=100-ST_KEYS.reduce((a,x)=>a+(STG.cw[x]||0),0);
+  const free=ST_KEYS.filter(x=>x!==k && !STG.touch.includes(x)), old=STG.touch.filter(x=>x!==k);
+  for(const grp of [free, old]){ if(!diff) break;
+    for(let g=0; g<40 && diff; g++){ const can=grp.filter(x=>diff>0 || (STG.cw[x]||0)>0); if(!can.length) break;
+      const x=can[g%can.length], step=diff>0?5:-5; if(diff<0 && (STG.cw[x]||0)<5) continue; STG.cw[x]=(STG.cw[x]||0)+step; diff-=step; } }
+  if(diff){ STG.cw[k]+=diff; r.value=STG.cw[k]; }
   ST_KEYS.forEach(x=>{ const el=document.querySelector(`[data-stw="${x}"]`); if(el && x!==k) el.value=STG.cw[x]; const b=document.getElementById("stv_"+x); if(b) b.textContent=STG.cw[x]+"%"; });
   stSetCustom(STG.cw);
   if(!stRaf) stRaf=requestAnimationFrame(()=>{ stRaf=0; stRefresh(); });
