@@ -388,7 +388,7 @@ function potHtml(){
   const col=(e,n,d,t,c1,c2)=>{ const f=t>0?Math.max(0,Math.min(1,d/t)):0;
     return `<div class="t4-col" style="--c1:${c1};--c2:${c2};--h:${(f*100).toFixed(1)}%;flex-grow:${Math.max(0.6,t/(tot||1)*2).toFixed(2)};cursor:default"><div class="fb-liq"><i class="fb-w1"></i><i class="fb-w2"></i><b class="fb-bub"></b><b class="fb-bub"></b><b class="fb-bub"></b></div>
       <span class="t4-v num">${m0(d)}<small> / ${m0(t)}</small></span><span class="t4-l"><span>${e}</span>${n}</span></div>`; };
-  let h=`<div class="card inv-card"><div class="t4-h"><small>Serbatoio del mese · profilo ${esc(PROFILES[PL.prof].n)}${PL.provisional?" (provvisorio)":""}</small>
+  let h=`<div class="card inv-card"><div class="t4-h"><small>Serbatoio del mese · strategia ${esc(PROFILES[PL.prof].n)}${PL.provisional?" (provvisoria)":""} <button class="add" data-b="goto" data-v="piano" style="font-size:11px">cambia ▸</button></small>
       <b class="num">${m0(filled)} <small style="font-size:.5em">di ${m0(tot)}</small></b>
       <span>da mettere da parte questo mese: 🛟 ${m0(fund)} sul conto + 📈 ${m0(invT)} da investire${m.pot>=1?` (con ${m0(m.pot)} dei mesi scorsi)`:""}</span></div>
     ${tot>0?`<div class="t4-tank inv-tank">${col("🛟","Sul conto",fDone,fund,"#7fd6d0","#2f8f8a")}${invT>0?col("📈","Investimenti",invD,invT,"#f2cf82","#b8862f"):""}</div>`:""}

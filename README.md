@@ -66,6 +66,7 @@ L'obiettivo di risparmio vale da subito: dai soldi che hai fino allo stipendio G
 ### 📈 Portafoglio e Piano
 - **Portafoglio**: le tue posizioni in ETF come pile di monete 3D che girano su un piatto, con un albero olografico che cresce insieme al valore. I prezzi arrivano da Yahoo Finance. Ci sono anche il grafico del valore nel tempo e l'andamento di oggi e della settimana.
 - **Piano**: quanto puoi investire ogni mese, l'obiettivo (anticipo casa, auto, 100.000 €, libertà finanziaria) e cinque portafogli modello, da Prudente ad Aggressivo. Per ciascuno ci sono le simulazioni Monte Carlo e il caso peggiore, verificati sui dati storici dal 2004 a oggi (vedi [docs/backtest.md](docs/backtest.md)).
+- **Strategia** (nel Piano): il costruttore del portafoglio in pannelli HUD. Scegli uno dei 5 profili o uno su misura con i pesi delle quattro voci; vedi composizione obiettivo contro oggi, rischio (calo peggiore, volatilità, 12 mesi peggiori, mesi per recuperare), il backtest dei versamenti mensili dal 2004 con il momento peggiore e il calo dal massimo, la previsione a ventaglio con la probabilità di arrivare al traguardo, il confronto tra le strategie e le regole che segue ogni mese. «Applica» la rende quella usata dal serbatoio del mese e dagli acquisti proposti.
 - **Replay**: il piano di accumulo mensile, con i promemoria prima del giorno di acquisto. Può partire dal mese prossimo, se questo mese compri a mano.
 - Con il portafoglio vuoto c'è il tasto per aggiungere le posizioni che hai già o quelle appena comprate.
 

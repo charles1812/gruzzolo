@@ -52,7 +52,6 @@
         <div class="hud-panel acc-teal" id="hbPs" style="--i:1"><div class="hud-ph"><span class="t">stato</span></div>
           <div class="hb-state">
             <span class="hud-pill" id="hbPill">--</span>
-            <div class="hud-kv"><span class="hud-label">restano</span><span class="c-cyan" id="hbRem">--</span></div>
             <div class="hud-kv"><span class="hud-label">al giorno</span><span id="hbDay">--</span></div>
             <div class="hud-kv"><span class="hud-label">ritmo</span><span id="hbPace">--</span></div>
           </div></div>
@@ -71,8 +70,7 @@
       <div class="hud-panel" id="hbPd" style="--i:4"><div class="hud-ph"><span class="t">ultimi 14 giorni</span><span class="tag" id="hbDTag">--</span></div>
         <div class="hb-days" id="hbDays"></div><div class="hb-dl" id="hbDl"></div>
         <div class="hb-legend hud-label"><span><i style="background:var(--teal)"></i>nel ritmo</span><span><i style="background:var(--amber)"></i>sopra</span><span><i style="background:var(--cyan)"></i>oggi</span></div></div>
-      <div class="hud-panel acc-amber" style="--i:5"><div class="hud-ph"><span class="t">ultime spese // tail -f</span><span class="tag">live</span></div>
-        <div class="hud-log" id="hbLog"></div><span class="cursor"></span></div>`;
+`;
     g=HUD.gauge(box.querySelector("#hbGauge"),{ text:"--", label:"" });
     sc=HUD.scope(box.querySelector("#hbScope"),{ capacity:30, min:0, max:50, color:C.cyan });
   }
@@ -104,7 +102,7 @@
     const perDay=Math.max(0,flex.reduce((a,x)=>a+Math.max(0,x.left),0))/Math.max(1,st.daysLeft);
     const sig=[st.remaining.toFixed(2),perDay.toFixed(2),Math.round(el*100),Math.round(frac*100)].join("|");
     if(sig!==lastSig){
-      HUD.scramble(box.querySelector("#hbRem"), eur(st.remaining));
+      // (i soldi che restano sono già scritti grandi nel serbatoio: qui non li ripeto)
       HUD.scramble(box.querySelector("#hbDay"), eur(perDay));
       HUD.scramble(box.querySelector("#hbPace"), `${Math.round(frac*100)}% / ${Math.round(el*100)}%`);
       lastSig=sig;
@@ -134,14 +132,6 @@
     box.querySelector("#hbDays").innerHTML=D14.map((x,i)=>`<div class="d ${i===13?"today":""} ${x.v>ritmo*1.5?"over":""} ${x.v<=0?"zero":""}" title="${x.k}: ${eur2(x.v)}"><i style="height:${Math.max(2,x.v/m14*100).toFixed(1)}%;animation-delay:${i*35}ms"></i></div>`).join("");
     box.querySelector("#hbDl").innerHTML=D14.map((x,i)=>`<span class="${i===13?"t":""}">${["D","L","M","M","G","V","S"][x.d.getDay()]}</span>`).join("");
 
-    // ultime spese: tail -f, la più nuova si decifra
-    const L=(B.tx||[]).slice().sort((a,b)=>(b.d+String(b.ts||0)).localeCompare(a.d+String(a.ts||0))).slice(0,7);
-    const log=box.querySelector("#hbLog"), first=L[0]?L[0].id:"";
-    log.innerHTML=L.map(t=>{ const inn=t.type==="in", gr=inn?["ENTR",C.teal]:GRP[grpOf(st,t)]||GRP.libero;
-      const when=t.ts && t.d===ymd(t0)?new Date(t.ts).toLocaleTimeString("it-IT",{ hour:"2-digit", minute:"2-digit" }):t.d.slice(8)+"/"+t.d.slice(5,7);
-      const c=catById(t.cat), txt=(t.note||c.n).toUpperCase();
-      return `<div class="r"><span>${when}</span><span style="color:${gr[1]}">${gr[0]}</span><span>${esc(txt)}</span><span class="num" style="color:${inn?C.teal:C.text}">${inn?"+":"−"}${eur2(t.amt)}</span></div>`; }).join("") || `<div class="r"><span>--:--</span><span style="color:${C.dim}">IDLE</span><span>NESSUNA SPESA</span><span></span></div>`;
-    if(first && first!==box.dataset.first){ const el=log.querySelector(".r > :nth-child(3)"); if(el) HUD.scramble(el, el.textContent); box.dataset.first=first; }
   }
 
   if(typeof renderBudget==="function"){
