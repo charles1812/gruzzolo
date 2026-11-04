@@ -284,13 +284,14 @@ function partialPlan(P, cy, s0){
   // se i soldi di adesso non bastano per le spese fisse fino allo stipendio, quello che manca non deve sparire: lo tengo in short
   const base=s0.left+buoni-needs-rep-inv, avail=Math.max(0, base), short=Math.max(0, -base);
   const wc=B.cats.filter(c=>c.g==="libere"), tot=wc.reduce((s,c)=>s+(P.per[c.id]||0),0);
-  // primo mese (da quando usi Gruzzolo al primo stipendio): niente obiettivo di risparmio, i soldi che restano li impari a gestire.
-  // Replay e azioni già comprate restano messi da parte; l'obiettivo pieno parte con il primo stipendio.
-  const saved=num(s0.saved)+inv, target=0;
+  // primo mese (da quando usi Gruzzolo al primo stipendio): l'obiettivo di risparmio del mese vale anche qui e si toglie dai soldi
+  // da spendere. Quello che hai già messo da parte, il Replay e le azioni comprate contano nell'obiettivo.
+  // Se investirne una parte o tenerli tutti sul conto lo scegli tu (B.firstInv), dal secondo mese decide il profilo.
+  const saved=num(s0.saved)+inv, goalFull=Math.max(0,P.save||0), target=Math.max(0, goalFull-saved-rep);
   const floor=wc.reduce((s,c)=>s+(c.lo!=null?c.lo:c.plan),0)*frac;
   const save=Math.min(target, avail), wants=Math.max(0, avail-save), belowFloor=wants<floor-0.5;
   wc.forEach(c=>per[c.id]= tot>0 ? wants*(P.per[c.id]||0)/tot : (c.id==="altro"?wants:0));
-  return Object.assign({}, P, { per, save, saved, goal:0, goalNext:Math.max(0,cyclePlan(addDays(cy.e,1)).save), net:s0.left, buoni, buoniN:bN, belowFloor, floor, needs, wants, short, partial:true, replayRes:rep, replayDate:repDate, remDays, startDate:s0.date, inv });
+  return Object.assign({}, P, { per, save, saved, goal:goalFull, goalNext:Math.max(0,cyclePlan(addDays(cy.e,1)).save), net:s0.left, buoni, buoniN:bN, belowFloor, floor, needs, wants, short, partial:true, replayRes:rep, replayDate:repDate, remDays, startDate:s0.date, inv });
 }
 function bStatus(ref){
   const cy=cycleOf(ref), s0=startInfo(cy);
@@ -317,7 +318,7 @@ function bStatus(ref){
     rows.push(row);
   });
   const inv=P.partial ? (P.inv||0) : invSum(ymd(cy.s), ymd(cy.e));
-  const invOver=P.partial ? 0 : Math.max(0, inv+((replay&&replay.enabled)?replayCost().total:0)-P.save);
+  const invOver=P.partial ? 0 : Math.max(0, inv+((replay&&replay.enabled&&(!replay.from||ymd(cy.e).slice(0,7)>=replay.from))?replayCost().total:0)-P.save);
   const deficit=extra+overNeeds+invOver;
   const short=P.short||0;                     // primo mese: soldi che mancano per coprire le spese fisse fino allo stipendio
   const free=W-Sw-deficit+credit-short;        // budget libero rimasto dopo imprevisti e sforamenti, più quello che avanzi sulle necessarie
@@ -389,15 +390,48 @@ function goalDone(st){
   if(P.partial) return P.saved + (P.replayRes>0 && P.replayDate<=t0 ? P.replayRes : 0);
   const rc=(replay&&replay.enabled)?replayCost().total:0, d=replay&&replay.dayOfMonth||1, y=st.cy.s.getFullYear(), m=st.cy.s.getMonth();
   let rd=new Date(y, m, clampDay(y, m, d)); if(rd<st.cy.s) rd=new Date(y, m+1, clampDay(y, m+1, d));
-  return (rc>0 && rd<=t0 ? rc : 0) + (st.inv||0);
+  const on=!replay.from || ymd(rd).slice(0,7)>=replay.from;      // Replay che parte da un mese più avanti: questo mese non c'è
+  return (rc>0 && on && rd<=t0 ? rc : 0) + (st.inv||0);
 }
 function firstMonthHtml(st){
-  const P=st.P, done=goalDone(st), extra=Math.max(0,st.free), next=addDays(st.cy.e,1);
-  return `<section><div class="card tank"><div class="bw-h">🌱 Primo mese: solo gestire</div>
-    <p class="bnote" style="margin-top:6px">Fino allo stipendio del ${esc(fShort(next))} non ti chiedo di mettere da parte niente: questi soldi impari a gestirli. Quello che avanza a fine mese te lo propongo da investire.</p>
-    <div class="tank-k" style="margin-top:8px">${done>0?`<div><small><i class="dot pos"></i>già messo da parte (Replay e azioni)</small><b class="num pos">${m0(done)}</b></div>`:""}
-      <div><small>se non spendi tutto il tempo libero avanzano</small><b class="num">${m0(extra)}</b></div>
-      <div><small>obiettivo dal prossimo stipendio</small><b class="num">${m0(Math.max(0,P.goalNext||0))} al mese</b></div></div></div></section>`;
+  const P=st.P, done=goalDone(st), extra=Math.max(0,st.free), next=addDays(st.cy.e,1), ch=firstChoice(st);
+  const G=P.saved+P.replayRes+P.save, pD=G>0?Math.min(1,done/G):0, pctD=Math.round(pD*100);
+  let h=`<section><div class="card tank"><div class="bw-h">🏺 Da mettere da parte fino al ${esc(fShort(st.cy.e))}</div>
+    <div class="tank-row">${ringSvg([{ f:pD, c:"pos" },{ f:1-pD, c:"pos soft" }], null, pctD+"%", "già da parte", `Risparmio: ${pctD}% fatto`)}
+      <div class="tank-k"><div><small>obiettivo del mese</small><b class="num">${m0(P.goal)}</b></div>
+        ${done>0?`<div><small><i class="dot pos"></i>già messo da parte</small><b class="num pos">${m0(done)}</b></div>`:""}
+        <div><small><i class="dot pos soft"></i>da mettere da parte</small><b class="num">${m0(P.save)}</b></div></div></div>
+    <p class="bnote" style="margin-top:6px">${P.save>0?`Questi <b class="num">${money(P.save)}</b> li ho già tolti dai soldi da spendere: nel Budget vedi solo quello che puoi usare.`:"L'obiettivo del mese è già coperto da quello che avevi messo da parte."}${P.save<P.goal-saveDoneIn(P)-1?` Con i soldi che hai adesso più di così non si riesce (l'obiettivo pieno è ${m0(P.goal)}).`:""}${extra>=5?` Se non spendi tutto il tempo libero avanzano altri ${m0(extra)}.`:""}</p>`;
+  if(P.save>0){
+    if(!ch) h+=`<p class="bnote" style="margin:10px 0 6px"><b>Primo mese: decidi tu.</b> Li tieni tutti sul conto o ne investi una parte? Dal prossimo stipendio la divisione la fa il tuo profilo.</p>
+      <button class="sopt rec" data-b="fminv" data-v="inv"><b>📈 Investine una parte</b><span>Divido tra liquidità e azioni secondo il tuo profilo e ti dico cosa comprare.</span></button>
+      <button class="sopt" data-b="fminv" data-v="keep"><b>💶 Tienili tutti sul conto</b><span>Questo mese niente acquisti: restano come liquidità (fondo emergenza).</span></button>`;
+    else h+=splitHtml(st)+`<button class="add" data-b="fminv" data-v="" style="margin-top:6px">${ch==="inv"?"Preferisco tenerli tutti sul conto":"Preferisco investirne una parte"}</button>`;
+  }
+  h+=`<p class="bnote" style="margin-top:8px">Dal prossimo stipendio: <b class="num">${m0(Math.max(0,P.goalNext||0))}</b> al mese.</p></div></section>`;
+  return h;
+}
+function saveDoneIn(P){ return P.saved+P.replayRes; }
+/* primo mese: investire o no è una scelta (B.firstInv[mese] = "inv" | "keep"); dal secondo mese decide il profilo */
+function firstChoice(st){ return st && st.P && st.P.partial ? ((B.firstInv||{})[st.cy.key]||null) : "profile"; }
+/* dove vanno i soldi da mettere da parte: liquidità e azioni, con le quote da comprare */
+function splitHtml(st){
+  if(typeof planCompute!=="function" || typeof PL==="undefined") return "";
+  if(!PL.prof){ PL.prof=3; PL.provisional=true; plSave(); }
+  let p=null; try{ p=planCompute(); }catch(e){} if(!p || !(p.S>0)) return "";
+  // le quote sono le stesse che propone «Scegli cosa comprare» (Portafoglio): quote intere verso i pesi del profilo
+  const m=typeof invMonth==="function"?invMonth():null, toInv=m?m.toInvest:0;
+  let L=[]; if(toInv>0 && typeof invCands==="function"){ L=invCands(); invPropose(L,toInv); L=L.filter(x=>x.n>0); }
+  const spent=L.reduce((a,x)=>a+x.n*x.px,0);
+  const buys=L.map(x=>`<div class="bp-row"><span>Compra <b>${x.n} × ${esc(shortName(x.t))}</b> <small>${esc(x.name)}</small></span><b class="num">${money(x.n*x.px)}</b></div>`).join("");
+  return `<div class="split"><div class="eyebrow" style="margin:10px 0 4px">Come li dividi · profilo ${esc(PROFILES[PL.prof].n)}${PL.provisional?" (provvisorio)":""}</div>
+    <div class="bp-row"><span>🛟 Sul conto (fondo emergenza)</span><b class="num">${money(p.toFund)}</b></div>
+    <div class="bp-row"><span>📈 Da investire in ETF${m&&m.pot>=1?` (con ${m0(m.pot)} dei mesi scorsi)`:""}</span><b class="num">${money(toInv)}</b></div>
+    ${buys}
+    ${toInv>0&&!L.length?`<p class="bnote" style="margin:4px 0 0">${p.missingPx.length?"Prezzi non ancora caricati: le quote te le dico appena arrivano.":"Non bastano per una quota intera: si sommano al mese prossimo."}</p>`:""}
+    ${L.length&&toInv-spent>1?`<div class="bp-row"><span>Restano per il prossimo acquisto</span><b class="num">${money(toInv-spent)}</b></div>`:""}
+    <p class="bnote" style="margin:4px 0 0">${esc(p.why)}${PL.provisional?" Il profilo è provvisorio: rispondi alle domande del Piano per averlo su misura.":""}</p>
+    ${L.length?`<button class="btn gold" data-pot="buy" style="margin-top:8px">📈 Scegli cosa comprare</button>`:""}</div>`;
 }
 function saveTankHtml(st){
   if(st.P.partial) return firstMonthHtml(st);
@@ -412,6 +446,7 @@ function saveTankHtml(st){
     <div class="tank-row">${ringSvg([{ f:pD, c:"pos" },{ f:pE-pD, c:"pos soft" }], null, pctD+"%", "già da parte", `Risparmio: ${pctD}% fatto, ${pct}% previsto`)}
       <div class="tank-k"><div><small>obiettivo del mese${F.fixed?` (fissato il ${esc(fDay(F.fixed))})`:""}</small><b class="num">${m0(G)}</b></div><div><small><i class="dot pos"></i>già messo da parte</small><b class="num pos">${m0(done)}</b></div><div><small><i class="dot pos soft"></i>a fine mese</small><b class="num">${m0(end)} · ${pct}%</b></div></div></div>
     <p class="bnote" style="margin-top:6px">${end>=G-1?`Sei in linea con l'obiettivo${end>G+1?`, anzi sopra di ${m0(end-G)}`:""}.`:P.partial && st.free>=0 ? `Ti mancano ${m0(G-end)} per l'obiettivo: questo mese sei partito a metà con ${m0(P.net)} sul conto, quindi più di così non si riesce. Dal prossimo stipendio l'obiettivo è pieno.` : `Sei sotto l'obiettivo di ${m0(G-end)}: imprevisti o spese sopra la stima.`}${extra>=5?` Se non spendi tutto il tempo libero arrivi fino a <b class="num">${m0(end+extra)}</b>: quello che avanza lo puoi investire.`:""}${P.partial?" L'obiettivo è sul mese intero: conto anche quello che hai messo da parte prima di installare Gruzzolo.":""}</p>
+    ${splitHtml(st)}
     <details class="why-d"><summary>Come calcolo l'obiettivo · cambia stipendio</summary>
       <div class="rng" style="margin:6px 0 10px"><input id="netIn" inputmode="decimal" value="${fmtIn(num(B.ans.net))}" aria-label="Stipendio netto"><button class="btn gold" data-b="netSave" style="width:auto;padding:12px 16px">Cambia stipendio</button></div>
       ${row("Stipendio",F.net,"")}${F.buoni>0?row("Buoni pasto",F.buoni,"+"):""}
@@ -571,6 +606,7 @@ function replayPending(st){
   if(st.P.partial) return st.P.replayRes>0;
   const d=replay.dayOfMonth||1, y=st.cy.s.getFullYear(), m=st.cy.s.getMonth();
   let rd=new Date(y, m, clampDay(y, m, d)); if(rd<st.cy.s) rd=new Date(y, m+1, clampDay(y, m+1, d));
+  if(replay.from && ymd(rd).slice(0,7)<replay.from) return false;
   return rd<=st.cy.e && rd>today0();
 }
 
@@ -861,7 +897,7 @@ const mAnno=d=>d.toLocaleDateString("it-IT",{ month:"short", year:"numeric" });
 function loanCardHtml(l){
   const i=loanInfo(l), k=LOAN_K[l.kind]||LOAN_K.prestito, col=i.done?"var(--gain)":"var(--c1)";
   return `<div class="loan">
-    <div class="loan-h"><span class="bc-e">${k[0]}</span><span class="txm-n">${esc(l.n||k[1])}<small>${k[1]}${l.rate?` · TAN ${String(l.rate).replace(".",",")}%`:""} · rata ${money(i.M)} il ${parseYmd(l.start).getDate()}</small></span>
+    <div class="loan-h"><span class="bc-e">${k[0]}</span><span class="txm-n">${esc(l.n||k[1])}<small>${k[1]}${l.from?` · da ${esc(l.from)}`:""}${l.rate?` · TAN ${String(l.rate).replace(".",",")}%`:""} · rata ${money(i.M)} il ${parseYmd(l.start).getDate()}</small></span>
       <b class="num ${i.done?"pos":""}">${i.done?"finito ✓":money(i.left)}</b></div>
     <div class="b4h-bar loan-bar"><i style="width:${(i.pct*100).toFixed(1)}%;--c1:${col};--c2:${col}"></i></div>
     <div class="loan-g">
@@ -882,18 +918,21 @@ function loansPanelHtml(){ const L=B.loans||[]; if(!L.length) return "";
     ${L.map(loanCardHtml).join("")}</div></section>`; }
 let LOAN_EDIT=null;
 function loanFormHtml(l){
-  const isNew=!l; l=l||{ n:"", kind:"mutuo", amt:"", monthly:"", start:"", end:"", rate:"", budget:true };
+  l=l||{ n:"", kind:"mutuo", amt:"", monthly:"", start:"", end:"", rate:"", budget:true };
+  const months=l.start&&l.end?monthsBetween(parseYmd(l.start),parseYmd(l.end))+1:"";
   const v=x=>x!=null&&x!==""?String(x).replace(".",","):"";
   return `<div class="recf loanf" data-id="${esc(l.id||"new")}" data-k="${esc(l.kind||"mutuo")}">
     <div class="fld"><span class="lab">Che cos'è</span><div class="recf-fq">${Object.entries(LOAN_K).map(([k,[e,t]])=>`<button type="button" class="chip ${(l.kind||"mutuo")===k?"on":""}" data-ln="kind" data-v="${k}">${e} ${t}</button>`).join("")}</div></div>
     <label class="fld"><span class="lab">Nome</span><input class="ln-n" value="${esc(l.n||"")}" placeholder="es. Casa, Auto, Prestito Findomestic" autocomplete="off"></label>
+    <label class="fld"><span class="lab">Da chi (facoltativo)</span><input class="ln-w" value="${esc(l.from||"")}" placeholder="es. banca, finanziaria, un amico" autocomplete="off"></label>
     <div class="recf-row"><label class="fld"><span class="lab">Importo prestato (€)</span><input class="ln-a" inputmode="decimal" value="${v(l.amt)}" placeholder="150.000"></label>
       <label class="fld"><span class="lab">Rata al mese (€)</span><input class="ln-m" inputmode="decimal" value="${v(l.monthly)}" placeholder="650"></label></div>
     <div class="recf-row"><label class="fld"><span class="lab">Prima rata</span><input class="ln-s" type="date" value="${esc(l.start||"")}"></label>
-      <label class="fld"><span class="lab">Ultima rata (facoltativa)</span><input class="ln-e" type="date" value="${esc(l.end||"")}"></label></div>
-    <label class="fld"><span class="lab">Tasso annuo TAN % (facoltativo)</span><input class="ln-r" inputmode="decimal" value="${v(l.rate)}" placeholder="3,2"></label>
+      <label class="fld"><span class="lab">Quanti mesi (facoltativo)</span><input class="ln-k" inputmode="numeric" value="${months}" placeholder="24"></label></div>
+    <div class="recf-row"><label class="fld"><span class="lab">Ultima rata (facoltativa)</span><input class="ln-e" type="date" value="${esc(l.end||"")}"></label>
+      <label class="fld"><span class="lab">Tasso TAN % (facoltativo)</span><input class="ln-r" inputmode="decimal" value="${v(l.rate)}" placeholder="3,2"></label></div>
     <div class="switch" style="border-top:none;padding-top:0"><span class="lab">La rata conta nel Budget (spesa fissa del mese)</span><div class="toggle ${l.budget!==false?"on":""}" data-ln="budget"></div></div>
-    <p class="recf-h">Servono nome, importo, rata e la data della prima rata. Con l'ultima rata o il tasso calcolo quanto manca e gli interessi. Se la rata è già in «Affitto / mutuo», spegni l'interruttore.</p>
+    <p class="recf-h">Servono nome, importo, rata e la data della prima rata. Con i mesi, l'ultima rata o il tasso calcolo quanto manca e gli interessi. Se la rata è già in «Affitto / mutuo», spegni l'interruttore.</p>
     <div class="btn-row" style="margin-top:6px"><button type="button" class="btn ghost" data-ln="cancel">Annulla</button><button type="button" class="btn gold" data-ln="save">Salva</button></div></div>`;
 }
 function loanListHtml(){
@@ -909,14 +948,17 @@ function renderLoanSettings(){ const h=loanListHtml(); ["sLoans","ricLoans"].for
 function loanAfter(){ unfreezePlan(); recalcCats(); bSave(); renderBudget(); renderLoanSettings(); if(typeof renderRecSettings==="function") renderRecSettings(); if(typeof syncNativeCats==="function") syncNativeCats(); }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-ln]"); if(!b) return; const a=b.dataset.ln, box=b.closest(".loanf");
   if(a==="add"){ LOAN_EDIT="new"; renderLoanSettings(); setTimeout(()=>{ const f=[...document.querySelectorAll(".loanf")].find(x=>x.offsetParent); if(f) f.scrollIntoView({ behavior:"smooth", block:"center" }); },60); return; }
-  if(a==="cancel"){ LOAN_EDIT=null; renderLoanSettings(); return; }
+  if(a==="cancel"){ if(box && box.closest("#lnScrim")){ closeM("#lnScrim"); return; } LOAN_EDIT=null; renderLoanSettings(); return; }
   if(a==="edit"){ LOAN_EDIT=b.dataset.id; renderLoanSettings(); return; }
   if(a==="kind"){ if(!box) return; box.dataset.k=b.dataset.v; box.querySelectorAll('[data-ln="kind"]').forEach(x=>x.classList.toggle("on",x===b)); return; }
   if(a==="budget"){ b.classList.toggle("on"); return; }
   if(a==="del"){ const l=(B.loans||[]).find(x=>x.id===b.dataset.id); if(!l) return; if(!confirm(`Togliere «${l.n}»?`)) return;
     B.loans=B.loans.filter(x=>x!==l); if(LOAN_EDIT===l.id) LOAN_EDIT=null; toast(`«${l.n}» tolto`); loanAfter(); return; }
   if(a==="save"){ if(!box) return; const q=s=>box.querySelector(s).value.trim();
-    const n=q(".ln-n"), amt=r2(num(q(".ln-a"))), monthly=r2(num(q(".ln-m"))), start=q(".ln-s"), end=q(".ln-e"), rate=q(".ln-r")?r2(num(q(".ln-r"))):null;
+    const n=q(".ln-n"), amt=r2(num(q(".ln-a"))), monthly=r2(num(q(".ln-m"))), start=q(".ln-s"), from=q(".ln-w"), k=Math.round(num(q(".ln-k"))), rate=q(".ln-r")?r2(num(q(".ln-r"))):null;
+    // i mesi valgono se l'ultima rata non c'è o non è cambiata (l'ultima rata scritta a mano vince)
+    const l0=(B.loans||[]).find(x=>x.id===box.dataset.id), e0=q(".ln-e"), k0=l0&&l0.start&&l0.end?monthsBetween(parseYmd(l0.start),parseYmd(l0.end))+1:0;
+    const end = k>0 && start && (!e0 || (l0 && e0===l0.end && k!==k0)) ? ymd(addMonthsD(parseYmd(start),k-1)) : e0;
     if(!n){ toast("Scrivi il nome"); box.querySelector(".ln-n").focus(); return; }
     if(!(amt>0)){ toast("Scrivi l'importo prestato"); box.querySelector(".ln-a").focus(); return; }
     if(!(monthly>0)){ toast("Scrivi la rata al mese"); box.querySelector(".ln-m").focus(); return; }
@@ -924,8 +966,8 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-ln]"); if
     if(end && end<start){ toast("L'ultima rata viene prima della prima"); box.querySelector(".ln-e").focus(); return; }
     B.loans=B.loans||[]; let l=box.dataset.id==="new"?null:B.loans.find(x=>x.id===box.dataset.id);
     if(!l){ l={ id:uid("ln") }; B.loans.push(l); }
-    Object.assign(l, { n, kind:box.dataset.k||"prestito", amt, monthly, start, end:end||"", rate:rate>0?rate:null, budget:box.querySelector('[data-ln="budget"]').classList.contains("on") });
-    LOAN_EDIT=null; const i=loanInfo(l); toast(`«${n}»: rimborsato ${m0(i.repaid)} su ${m0(i.P)}`); loanAfter(); return; }
+    Object.assign(l, { n, from, kind:box.dataset.k||"prestito", amt, monthly, start, end:end||"", rate:rate>0?rate:null, budget:box.querySelector('[data-ln="budget"]').classList.contains("on") });
+    LOAN_EDIT=null; const i=loanInfo(l); toast(`«${n}»: rimborsato ${m0(i.repaid)} su ${m0(i.P)}`); if(box.closest("#lnScrim")) closeM("#lnScrim"); loanAfter(); return; }
 });
 
 /* una spesa in una riga, toccandola si modifica */
@@ -945,6 +987,7 @@ function tank4Html(st){
   return `<div class="t4"><div class="t4-h"><small>Soldi che ti restano fino al ${esc(fShort(st.cy.e))}</small>
       <b class="num ${total<0?"neg":""}" data-cu="${Math.max(0,total).toFixed(2)}" data-cuk="t4tot">${money(Math.max(0,total))}</b>
       <span>${total<0?`sei sotto di <b class="neg">${money(-total)}</b>`:`${G.map((g,i)=>`${g.e} ${shown[i]}`).join(" + ")} = <b>${m0(total)}</b>`}</span>
+      ${st.P.save>0.5?`<span class="t4-bu">🏺 non compresi: <b>${m0(st.P.save)}</b> da mettere da parte${st.P.partial?` (sul conto in tutto ${m0(Math.max(0,total)+st.P.save)})`:""}</span>`:""}
       ${bl.n>0?`<span class="t4-bu">🎟️ in più hai <b>${bl.n} buoni pasto</b> (${m0(bl.val)}): non sono soldi, valgono solo per la spesa e i pasti</span>`:""}</div>
     <div class="t4-tank">${G.map((g,i)=>{ const f=g.cap>0?Math.max(0,Math.min(1,g.left/g.cap)):0, [c1,c2]=B4_COL[g.id];
       return `<button class="t4-col ${f<0.15 && !(g.id==="spesa"&&bl.n>0)?"low":""}" data-sec="${g.id}" style="--c1:${c1};--c2:${c2};--h:${(f*100).toFixed(1)}%;flex-grow:${Math.max(0.55,Math.max(g.cap,1)/capT*4).toFixed(2)}" aria-label="${esc(g.n)}: restano ${shown[i]} euro">
@@ -1083,7 +1126,7 @@ function renderBudget(){
   const SEC={ libero:"", weekend:"", spesa:"", ric:"", goal:"" };
   if(P.partial){
     const wl=weekendsLeft(cy), wk=st.rows.find(r=>r.c.id==="weekend");
-    SEC.goal+=`<section><details class="card bplan bfold"><summary><span class="bw-h">🧮 Fino al ${fShort(cy.e)}</span><span class="bf-s">${m0(P.wants)} per il tempo libero · primo mese, niente obiettivo <i>conti ▾</i></span></summary>
+    SEC.goal+=`<section><details class="card bplan bfold"><summary><span class="bw-h">🧮 Fino al ${fShort(cy.e)}</span><span class="bf-s">${m0(P.wants)} per il tempo libero${P.save>0?` · ${m0(P.save)} da parte`:""} <i>conti ▾</i></span></summary>
       <div class="bp-row"><span>Soldi sul conto (${esc(fDay(P.startDate))})</span><b class="num">${money(P.net)}</b></div>
       ${P.buoni>0?`<div class="bp-row"><span>Buoni pasto per la spesa (${P.buoniN} × ${money(num(B.ans.buoni))})</span><b class="num">+${money(P.buoni)}</b></div>`:""}
       <div class="bp-row"><span>Spese necessarie e fisse dei ${P.remDays} giorni che mancano</span><b class="num">−${money(P.needs)}</b></div>
@@ -1092,7 +1135,7 @@ function renderBudget(){
       <div class="bp-row"><span>Per il tempo libero</span><b class="num">${money(P.wants)}</b></div>
       ${P.belowFloor?`<p class="bnote warn" style="margin-top:6px">Fino allo stipendio i soldi per il tempo libero sono meno del minimo che avevi indicato (${m0(P.floor)}): vai piano con le spese non necessarie.</p>`:""}
       ${wk?`<p class="bnote" style="margin-top:8px">Nei prossimi ${wl} weekend puoi spendere circa <b class="num">${money(Math.max(0,wk.left)/wl)}</b> a weekend.</p>`:""}
-      <p class="bnote">Primo mese: non ti chiedo di mettere da parte niente, fino al ${fShort(cy.e)} gestisci questi soldi.${P.saved+P.replayRes>0?` Già messi da parte: ${m0(P.saved)}${P.replayRes>0?` più il Replay di ${m0(P.replayRes)}`:""}.`:""} L'obiettivo di ${m0(P.goalNext||0)} al mese parte con il prossimo stipendio. Le spese fatte prima del ${esc(fDay(P.startDate))} non le conto. Quello che avanza a fine mese te lo propongo da investire.</p></details></section>`;
+      <p class="bnote">Primo mese: l'obiettivo di risparmio vale già, quindi lo tolgo dai soldi da spendere.${P.saved+P.replayRes>0?` Già messi da parte: ${m0(P.saved)}${P.replayRes>0?` più il Replay di ${m0(P.replayRes)}`:""}.`:""} Dal prossimo stipendio l'obiettivo è ${m0(P.goalNext||0)} al mese. Le spese fatte prima del ${esc(fDay(P.startDate))} non le conto. Quello che avanza a fine mese te lo propongo da investire.</p></details></section>`;
   }
 
   SEC.spesa+=tankHtml(st);
@@ -1148,7 +1191,7 @@ function renderBudget(){
   }
 
   // movimenti
-  const IV=invList(P.partial?P.startDate:ymd(cy.s), ymd(cy.e)).map(x=>({ id:x.id, d:x.d, type:"inv", amt:x.amt, note:`Comprate ${x.n} ${shortName(x.t)}` }));
+  const IV=invList(P.partial?P.startDate:ymd(cy.s), ymd(cy.e)).map(x=>({ id:x.id, d:x.d, type:"inv", amt:x.amt, note:x.plan?(x.n?`Messi da parte: ${x.n} quote (${x.t}) e fondo`:"Messi da parte nel fondo emergenza"):`Comprate ${x.n} ${shortName(x.t)}` }));
   const T=st.T.concat(IV).sort((a,b)=>a.d<b.d?1:(a.d>b.d?-1:(a.id<b.id?1:-1)));
   h+=`<section id="bx-mov"><div class="card-h" style="padding:0 4px;margin-bottom:8px"><div class="eyebrow">Movimenti del mese</div><button class="add" data-b="add">+ Aggiungi</button></div>`;
   if(!T.length) h+=`<div class="bempty">Ancora nessun movimento. Usa il tasto <b>+</b> ogni volta che spendi: bastano tre tocchi.</div>`;
@@ -1250,6 +1293,7 @@ function openQuickAdd(id, presetCat){
 function renderQa(){
   document.querySelectorAll("#qaType button").forEach(b=>b.classList.toggle("on", b.dataset.v===qa.type));
   const box=$("#qaCats");
+  $("#qaLoan").style.display = qa.type==="out" && !qa.edit ? "" : "none";
   if(qa.type==="in"){ box.innerHTML=`<p class="bnote">Rimborsi, regali, tredicesima, vendite: aumentano il risparmio del mese.</p>`; $("#qaFuel").style.display="none"; $("#qaQuick").innerHTML=""; return; }
   box.innerHTML=qaCats().map(c=>`<button class="qc ${qa.cat===c.id?"on":""} ${c.g==="extra"?"qx":""}" data-c="${c.id}"><span>${c.e}</span>${esc(c.n)}</button>`).join("");
   $("#qaFuel").style.display = qa.cat==="benzina" ? "" : "none";
@@ -1637,7 +1681,13 @@ document.body.insertAdjacentHTML("beforeend", `
   </div>
   <label class="fld" style="margin-top:12px"><span class="lab" id="qaNoteLab">Nota (facoltativa)</span><input id="qaNote" autocomplete="off"></label>
   <label class="fld"><span class="lab">Data</span><input id="qaDate" type="date"></label>
+  <button type="button" class="qa-loan" id="qaLoan">🏦 È un prestito o un mutuo? <span>rate, interessi, da chi</span></button>
   <div class="qa-actions"><div class="btn-row" style="margin-top:0"><button class="btn ghost" id="qaCancel" style="flex:0 0 auto;padding-left:18px;padding-right:18px">Annulla</button><button class="btn ghost" id="qaDel" style="flex:0 0 auto;padding-left:18px;padding-right:18px;color:var(--loss)">Elimina</button><button class="btn gold" id="qaSave">Salva</button></div></div>
+</div></div>
+<div class="scrim" id="lnScrim"><div class="sheet">
+  <h2>🏦 Prestito o mutuo</h2>
+  <p class="hint">Non la conto come spesa di oggi: nel Budget entra la rata ogni mese, tra le spese fisse. Qui vedi anche quanto hai già rimborsato e quanto manca.</p>
+  <div id="lnQa"></div>
 </div></div>
 <div class="scrim" id="rcScrim"><div class="sheet">
   <h2>Allinea con la banca</h2>
@@ -1677,6 +1727,14 @@ $("#qaType").addEventListener("click",e=>{ const b=e.target.closest("button"); i
 $("#qaCats").addEventListener("click",e=>{ const b=e.target.closest(".qc"); if(!b) return; qa.cat=b.dataset.c; renderQa(); });
 $("#qaQuick").addEventListener("click",e=>{ const b=e.target.closest("[data-q]"); if(!b) return; $("#qaAmt").value=String(b.dataset.q).replace(".",","); });
 $("#qaSave").addEventListener("click",saveQa);
+/* dalla spesa al prestito: l'importo scritto diventa l'importo prestato, la nota il nome, la prima rata un mese dopo */
+$("#qaLoan").addEventListener("click",()=>{
+  if(!B.setup){ toast("Rispondi prima alle domande del Budget"); return; }
+  const amt=r2(num($("#qaAmt").value)), d=$("#qaDate").value?parseYmd($("#qaDate").value):today0(), note=$("#qaNote").value.trim();
+  closeM("#qaScrim");
+  $("#lnQa").innerHTML=loanFormHtml({ n:note, kind:"prestito", amt:amt>0?amt:"", monthly:"", start:ymd(addMonthsD(d,1)), end:"", rate:"", budget:true });
+  openM("#lnScrim"); setTimeout(()=>{ const f=$("#lnQa .ln-n"); if(f && !note) f.focus(); },250);
+});
 $("#qaAmt").addEventListener("keydown",e=>{ if(e.key==="Enter" && qa.cat) saveQa(); });
 $("#qaCancel").addEventListener("click",()=>closeM("#qaScrim"));
 $("#qaDel").addEventListener("click",()=>{ if(!qa.edit) return; if(!confirm("Eliminare questo movimento?")) return; const dt=B.tx.find(t=>t.id===qa.edit); if(dt && dt.buoniN && B.buoni){ B.buoni.bal+=dt.buoniN; B.buoni.log.push({ d:dt.d, n:dt.buoniN, kind:"undo", tx:dt.id }); } B.tx=B.tx.filter(t=>t.id!==qa.edit); bSave(); closeM("#qaScrim"); renderBudget(); toast("Movimento eliminato"); });
@@ -1731,6 +1789,7 @@ document.addEventListener("click",e=>{
   else if(a==="salary"){ const v=r2(num($("#salAmt").value)); if(!(v>0)){ toast("Scrivi l'importo"); return; } B.salary=B.salary||{}; B.salary[cycleOf().key]=v; bSave(); renderBudget(); if(typeof renderPiano==="function") renderPiano(); toast("Stipendio segnato"); }
   else if(a==="salreset"){ B.salary=B.salary||{}; delete B.salary[cycleOf().key]; bSave(); renderBudget(); }
   else if(a==="mode"){ B.mode=b.dataset.v; unfreezePlan(); setTimeout(renderModeSettings,0); if(B.mode==="manual" && !(B.goal>0)) B.goal=Math.round(modePlan("custom").save); bSave(); renderBudget(); if(typeof renderPiano==="function") renderPiano(); }
+  else if(a==="fminv"){ const k=cycleOf().key; B.firstInv=B.firstInv||{}; if(b.dataset.v) B.firstInv[k]=b.dataset.v; else B.firstInv[k]=B.firstInv[k]==="inv"?"keep":"inv"; bSave(); renderBudget(); if(typeof renderPiano==="function") renderPiano(); if(typeof mountPot==="function") mountPot(); toast(B.firstInv[k]==="inv"?"Ok: ti dico cosa comprare":"Ok: questo mese restano sul conto"); }
   else if(a==="netSave"){ const v=r2(num($("#netIn").value)); if(!(v>0)){ toast("Scrivi lo stipendio"); return; }
     B.ans.net=v; unfreezePlan(); settings.income=v; store.set("settings",settings); bSave(); renderBudget(); if(typeof renderPiano==="function") renderPiano(); toast("Stipendio aggiornato: "+m0(v)+" al mese"); }
   else if(a==="goalSave"){ const rc=(replay&&replay.enabled)?replayCost().total:0; let v=Math.round(num($("#goalIn").value));

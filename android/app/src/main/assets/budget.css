@@ -869,3 +869,9 @@ body{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
 /* azzera tutto */
 .btn.danger{background:rgba(232,120,106,.08); border:1px solid var(--loss); color:var(--loss)}
 .reset-box{margin-top:26px; padding-top:14px; border-top:1px dashed var(--line)}
+
+/* dalla spesa al prestito: piccolo, in fondo */
+.qa-loan{display:block; margin:4px 0 0; padding:6px 2px; background:none; border:0; color:var(--muted); font:inherit; font-size:12px; text-align:left; cursor:pointer}
+.qa-loan span{opacity:.7; margin-left:4px}
+.split{border-top:1px solid var(--line); margin-top:10px; padding-top:2px}
+.split .bp-row small{display:block; color:var(--muted); font-size:11px}

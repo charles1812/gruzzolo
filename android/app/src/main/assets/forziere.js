@@ -314,9 +314,15 @@ function fzCheckLevel(){
   if(seen>=0 && lv.k>seen){ setTimeout(()=>{ fzCelebrate(); toast(`${lv.cur[2]} Nuovo livello: ${lv.cur[1]}!`); }, 900); }
   if(lv.k!==seen) store.set("fzLevel", lv.k);
 }
+/* portafoglio vuoto: da qui aggiungi le quote che hai già o quelle che compri adesso */
+function fzEmptyHtml(){
+  return `<div class="card fz fz-empty"><div class="fz-val"><small>Il tuo portafoglio</small><b class="num">0 €</b><span>Nessuna posizione per ora.</span></div>
+    <p class="bnote">Hai già delle azioni o degli ETF, o li hai appena comprati? Aggiungili qui: il valore poi si aggiorna da solo. Se li compri adesso con i soldi del conto, contano come messi da parte questo mese.</p>
+    <button class="btn gold" data-fzadd="1">＋ Aggiungi una posizione o un acquisto</button></div>`;
+}
 function mountForziere(){
   const host=document.getElementById("fzHost"); if(!host) return;
-  if(!holdings.length || !(totals().val>0)){ host.innerHTML=""; return; }
+  if(!holdings.length || !(totals().val>0)){ host.innerHTML=fzEmptyHtml(); return; }
   host.innerHTML=forziereHtml(); renderForziere(); fzCheckLevel();
   if(typeof pfPaint==="function"){ pfPaint(); renderPfChart(false); }
   try{ if(FZ.io) FZ.io.disconnect(); FZ.io=new IntersectionObserver(es=>{ FZ.visible=es[0].isIntersecting; if(FZ.visible){ FZ.lastFrame=0; fzLoop(); } }); FZ.io.observe(document.getElementById("fzCanvas")); }catch(e){}
@@ -345,8 +351,8 @@ function potSuggest(){
   if(typeof B==="undefined" || !B.setup || typeof cycleOf!=="function") return null;
   const cur=cycleOf(), st=bStatus(), rc=(replay&&replay.enabled)?replayCost().total:0, added=B.potAdd||{};
   const name=c=>(c.s.getDate()>15?c.e:c.s).toLocaleDateString("it-IT",{ month:"long" });
-  // primo mese: niente obiettivo, da investire c'è solo quello che avanza del tempo libero (Replay e azioni sono già investiti)
-  const amtOf=x=>Math.floor(x.P.partial ? Math.max(0,x.free) : Math.max(0,goalEnd(x)-rc));
+  // primo mese: da investire c'è il risparmio solo se hai scelto di investirne una parte
+  const amtOf=x=>Math.floor(x.P.partial ? ((B.firstInv||{})[x.cy.key]==="inv" ? Math.max(0,x.P.save+Math.min(0,x.free)+x.extraIn) : 0) : Math.max(0,goalEnd(x)-rc));
   if(st.daysLeft<=3 && !added[cur.key]) return { key:cur.key, name:name(cur), amt:amtOf(st) };
   const prev=cycleOf(addDays(cur.s,-1));
   if(dayDiff(cur.s,today0())<7 && !added[prev.key] && parseYmd(B.setup.slice(0,10))<=prev.e){ const sp=bStatus(prev.s); return { key:prev.key, name:name(prev), amt:amtOf(sp) }; }
@@ -356,8 +362,9 @@ function potSuggest(){
    quanto manca, più gli avanzi dei mesi scorsi; un tasto per scegliere cosa comprare */
 function invMonth(){
   let G=0, done=0, first=false;
-  // primo mese: nessun obiettivo, quindi niente «da investire» oltre agli avanzi che decidi tu
-  try{ if(typeof B!=="undefined" && B.setup){ const st=bStatus(); first=!!st.P.partial; done=goalDone(st); G=first?done:Math.max(0,cyclePlan(st.cy.s).save); } }catch(e){}
+  // la parte che va sul conto (fondo emergenza, o primo mese se scegli di non investire) non è da investire
+  try{ if(typeof B!=="undefined" && B.setup){ const st=bStatus(); first=!!st.P.partial; done=goalDone(st); G=first?st.P.saved+st.P.replayRes+st.P.save:Math.max(0,cyclePlan(st.cy.s).save);
+    let p=null; try{ p=PL.prof?planCompute():null; }catch(e){} if(p) G=Math.max(done, G-p.toFund); else if(first && (B.firstInv||{})[st.cy.key]!=="inv") G=done; } }catch(e){}
   const pot=Math.max(0,+PL.pot||0), left=Math.max(0,G-done);
   return { G, done, left, pot, first, toInvest:r2(left+pot), pc:G>0?Math.min(100,Math.round(done/G*100)):0 };
 }
@@ -365,10 +372,18 @@ function potHtml(){
   const m=invMonth(), sg=potSuggest();
   return `<div class="mbar" role="progressbar" aria-valuenow="${m.pc}" aria-valuemin="0" aria-valuemax="100" aria-label="Investimento del mese" data-pot="buy">
       <i style="width:${m.pc}%"></i><span class="mb-t">Investimento del mese</span><b class="mb-p num">${m.pc}%</b></div>
-    <div class="inv-sub"><div><b class="num">${m0(m.done)}</b> <span>${m.first?"investiti · primo mese, niente obiettivo":`di ${m0(m.G)} investiti`}</span>${m.pot>=1?`<small>+ ${money(m.pot)} avanzati dai mesi scorsi</small>`:""}</div>
+    <div class="inv-sub"><div><b class="num">${m0(m.done)}</b> <span>di ${m0(m.G)} investiti</span>${m.pot>=1?`<small>+ ${money(m.pot)} avanzati dai mesi scorsi</small>`:""}</div>
       <div class="inv-r2"><small>da investire</small><b class="num">${m0(m.toInvest)}</b></div>
       <button class="btn ${m.toInvest>0?"gold":"ghost"} pot-buy" data-pot="buy" ${m.toInvest>0?"":"disabled"}>Scegli cosa comprare</button></div>
+    ${firstAsk()}
     ${sg&&sg.amt>0?`<button class="sopt rec" data-pot="add" data-key="${sg.key}" data-amt="${sg.amt}"><span class="sbadge">fine mese</span><b>➕ Tieni da investire i risparmi di ${esc(sg.name)}: ${money(sg.amt)}</b><span>Quello che hai messo da parte e non hai ancora investito.</span></button>`:""}`;
+}
+/* primo mese: se investire una parte di quello che metti da parte lo scegli tu (anche da qui) */
+function firstAsk(){
+  try{ const st=bStatus(); if(!st.P.partial || !(st.P.save>0) || (B.firstInv||{})[st.cy.key]) return "";
+    return `<p class="bnote" style="margin:10px 2px 6px">Primo mese: devi mettere da parte <b class="num">${money(st.P.save)}</b>. Li tieni sul conto o ne investi una parte?</p>
+      <button class="sopt rec" data-b="fminv" data-v="inv"><b>📈 Investine una parte</b><span>Ti propongo le quote da comprare secondo il tuo profilo.</span></button>
+      <button class="sopt" data-b="fminv" data-v="keep"><b>💶 Tienili tutti sul conto</b><span>Questo mese niente acquisti.</span></button>`; }catch(e){ return ""; }
 }
 function mountPot(){ const h=document.getElementById("potHost"); if(!h) return; if(typeof PL==="undefined"){ h.innerHTML=""; return; } h.innerHTML=potHtml(); }
 
@@ -440,6 +455,7 @@ function replayAutoApply(){
   const t0=today0(), last=replayDateOf(t0.getFullYear(), t0.getMonth()), lastDue=last<=t0?last:replayDateOf(t0.getFullYear(), t0.getMonth()-1), mk=d=>ymd(d).slice(0,7);
   if(!replay.applied){ replay.applied=mk(lastDue); store.set("replay",replay); return false; }   // da adesso in poi (i Replay passati sono già nelle posizioni)
   if(replay.applied>=mk(lastDue)) return false;
+  if(replay.from && mk(lastDue)<replay.from) return false;                     // parte da un mese più avanti
   const items=replay.items.filter(i=>+i.quote>0); if(items.some(i=>!(prices[i.ticker]&&prices[i.ticker].eur>0))) return false;   // aspetto i prezzi
   RP_BUSY=true; replay.applied=mk(lastDue); store.set("replay",replay);
   addBuys(items.map(i=>({ t:i.ticker, n:+i.quote, px:prices[i.ticker].eur, name:i.name })));

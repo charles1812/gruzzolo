@@ -10,7 +10,7 @@ def check(name, ok, info=""):
     res.append(bool(ok)); print(("PASS " if ok else "FAIL ") + name + ("" if ok else "  -- " + json.dumps(info, ensure_ascii=False)[:600]), flush=True)
 
 EXACT = """()=>{ const st=bStatus(), P=st.P, s0=B.start; if(!P.partial) return { ok:Math.abs(st.remaining-st.groups.reduce((a,g)=>a+g.left,0))<0.01 };
-  const conto=s0.left-(P.replayRes||0)-(P.inv||0)-st.T.filter(t=>t.type!=='in').reduce((a,t)=>a+t.amt-(t.buoniVal||0),0);
+  const conto=s0.left-(P.replayRes||0)-(P.inv||0)-(P.save||0)-st.T.filter(t=>t.type!=='in').reduce((a,t)=>a+t.amt-(t.buoniVal||0),0);
   return { ok:Math.abs(st.remaining-conto)<0.01, remaining:+st.remaining.toFixed(2), conto:+conto.toFixed(2) }; }"""
 
 with sync_playwright() as p:

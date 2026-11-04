@@ -185,8 +185,14 @@ function planCompute(){
   if(fund<ess){ toFund=S; why="Prima di investire serve almeno un mese di spese da parte: questo mese tutto va al fondo emergenza."; }
   else if(fund<target){ toFund=Math.min(target-fund, S*0.5); why=`Il fondo emergenza è al ${Math.round(fund/target*100)}% (obiettivo ${months} mesi di spese): metà del risparmio va lì finché non è pieno.`; }
   else why=`Il fondo emergenza è completo (${months} mesi di spese): tutto il risparmio può essere investito.`;
+  // primo mese: investire o no lo scegli tu nel Budget (finché non scegli, restano sul conto); dal secondo mese decide il profilo
+  const firstM=!!(ms.st && ms.st.P.partial);
+  if(firstM){ const ch=(B.firstInv||{})[ms.st.cy.key];
+    if(ch!=="inv"){ toFund=S; why=ch==="keep"?"Primo mese: hai scelto di tenere tutto sul conto.":"Primo mese: scegli nel Budget se investirne una parte; finché non scegli restano sul conto."; }
+    else { toFund=fund<target?Math.min(target-fund, S*0.5):0; why=fund<target?`Primo mese, hai scelto di investire: metà va al fondo emergenza (è al ${Math.round(fund/target*100)}% di ${months} mesi di spese), il resto in ETF secondo il profilo.`:"Primo mese, hai scelto di investire: il fondo emergenza è completo, tutto va in ETF secondo il profilo."; } }
   // il Replay parte da solo: al fondo va solo quello che resta dopo il Replay
-  const rcM=(replay && replay.enabled && (!ms.st || replayPending(ms.st))) ? replayCost().total : 0;
+  // (nel primo mese il Replay è già fuori dai soldi da mettere da parte, quindi non lo sottraggo di nuovo)
+  const rcM=(!firstM && replay && replay.enabled && (!ms.st || replayPending(ms.st))) ? replayCost().total : 0;
   if(rcM>0 && toFund>Math.max(0,S-rcM)){ toFund=Math.max(0,S-rcM); if(fund<target) why=`Il Replay (${m0(rcM)}) continua ogni mese; il resto del risparmio va al fondo emergenza finché non arriva a ${m0(fund<ess?ess:target)}.`; }
   const inv=Math.max(0,S-toFund);
 
@@ -224,7 +230,7 @@ function planCompute(){
       satLeft=rem;
     }
   }
-  const free=Math.max(0, inv-satAmt-repTot)+pot;
+  const free=Math.max(0, inv-satAmt-(firstM?0:repTot))+pot;
   const after=totNow+repTot+free;
   const deficit={}; let defTot=0;
   keys.forEach(k=>{ let want=after*prof.w[k]/100; if(k==="SWDA") want-=satellite; deficit[k]=Math.max(0,want-cur[k]); defTot+=deficit[k]; });
@@ -277,7 +283,7 @@ function planCompute(){
     const monthsFix=over.goal>0 ? need/perMonth : Infinity;
     if(monthsFix>12) rebal={ k:over.k, now:over.now, goal:over.goal, sell:Math.max(0,over.v-over.goal/100*totNow), monthsFix };
   }
-  return { satAmt, satBuys, satVal, satLeft, prof, ms, S, ess, months, target, fund, toFund, why, inv, rep, repTot, free, pot, buys, left:Math.max(0,left), skipped, missingPx, weights, conc, totNow, fee, rebal, ter:terV>0?terW/terV:null, terV };
+  return { firstM, satAmt, satBuys, satVal, satLeft, prof, ms, S, ess, months, target, fund, toFund, why, inv, rep, repTot, free, pot, buys, left:Math.max(0,left), skipped, missingPx, weights, conc, totNow, fee, rebal, ter:terV>0?terW/terV:null, terV };
 }
 
 /* ---------- previsione: Monte Carlo a blocchi di 12 mesi sui rendimenti veri ---------- */
@@ -361,7 +367,7 @@ function healthChecks(p){
     const onlyEq=p.rep.every(r=>{ const k=Object.keys(ASSETS).find(x=>ASSETS[x].t===r.t); return !k || ASSETS[k].k==="az"; });
     const ps=profStats(PL.prof);
     if(onlyEq && ps.az<100) tip("Il Replay compra solo azioni",`Il tuo profilo vuole anche il ${100-ps.az}% tra obbligazioni e liquidità: le aggiungo io negli acquisti a mano. Se preferisci tutto automatico, adatta il Replay.`,"replay");
-    if(p.repTot>p.S+1) warn("Il Replay costa più di quanto risparmi",`${money(p.repTot)} contro ${money(p.S)} di risparmio previsto: la differenza esce dalla liquidità.`);
+    if(!p.firstM && p.repTot>p.S+1) warn("Il Replay costa più di quanto risparmi",`${money(p.repTot)} contro ${money(p.S)} di risparmio previsto: la differenza esce dalla liquidità.`);
   }
   return L;
 }

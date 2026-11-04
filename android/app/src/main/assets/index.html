@@ -564,7 +564,8 @@
     <div id="rItems"></div>
     <button class="add" id="addRItem" style="margin:2px 0 16px">+ Aggiungi ETF al piano</button>
     <label class="fld"><span class="lab">Giorno del mese dell'acquisto</span><input id="rDay" type="number" inputmode="numeric" min="1" max="31" placeholder="1"></label>
-    <div class="switch" style="border-bottom:1px solid var(--line)"><span class="lab">Piano attivo</span><div class="toggle" id="rEnabled"></div></div>
+    <div class="switch"><span class="lab">Piano attivo</span><div class="toggle" id="rEnabled"></div></div>
+    <div class="switch" style="border-bottom:1px solid var(--line)"><span class="lab">Inizia dal mese prossimo<small style="display:block;color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0">questo mese compri a mano, il Replay parte dopo</small></span><div class="toggle" id="rNext"></div></div>
     <div class="btn-row"><button class="btn gold" id="saveReplay">Salva piano</button></div>
     <button class="btn ghost" id="cancelReplay" style="margin-top:10px">Annulla</button>
   </div>
@@ -973,6 +974,8 @@ function nextReplay(){
   const now=new Date(); const t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   let d=new Date(now.getFullYear(),now.getMonth(),clampDay(now.getFullYear(),now.getMonth(),day));
   if(d<t0){ const m=now.getMonth()+1; d=new Date(now.getFullYear(),m,clampDay(now.getFullYear(),m,day)); }
+  // Replay che parte da un mese più avanti (es. «dal mese prossimo»): il primo acquisto è in quel mese
+  if(replay.from){ const [fy,fm]=replay.from.split("-").map(Number), f=new Date(fy,fm-1,clampDay(fy,fm-1,day)); if(f>d) d=f; }
   const days=Math.round((d-t0)/86400000);
   return { date:d, days };
 }
@@ -1354,19 +1357,25 @@ $("#editReplayBtn").addEventListener("click",()=>{
   replay.items=replay.items||[]; renderRItems();
   $("#rDay").value=replay.dayOfMonth||1;
   $("#rEnabled").classList.toggle("on",!!replay.enabled);
+  $("#rNext").classList.toggle("on", !!replay.from && replay.from>ymKey(new Date()));
   openM("#replayScrim");
 });
 $("#addRItem").addEventListener("click",()=>{ replay.items.push({ticker:"",name:"",quote:1}); renderRItems(); });
 $("#rEnabled").addEventListener("click",e=>e.currentTarget.classList.toggle("on"));
+$("#rNext").addEventListener("click",e=>e.currentTarget.classList.toggle("on"));
+function ymKey(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
 $("#cancelReplay").addEventListener("click",()=>closeM("#replayScrim"));
 $("#saveReplay").addEventListener("click",async()=>{
   replay.dayOfMonth = Math.min(Math.max(+$("#rDay").value||1,1),31);
   replay.enabled = $("#rEnabled").classList.contains("on");
+  if($("#rNext").classList.contains("on")){ const n=new Date(); replay.from=ymKey(new Date(n.getFullYear(), n.getMonth()+1, 1)); } else delete replay.from;
+  if(typeof unfreezePlan==="function" && typeof B!=="undefined" && B.setup){ unfreezePlan(); bSave(); }
   replay.items = replay.items.filter(it=>it.ticker);
   replay.items.forEach(it=>{ const h=holdings.find(x=>x.ticker===it.ticker); if(h&&!it.name) it.name=h.name; });
   store.set("replay",replay); closeM("#replayScrim");
   for(const it of replay.items){ if(!prices[it.ticker]) await refreshOne({ticker:it.ticker, avg:0, cur:"EUR"}); }
   store.set("prices",prices); render(); checkReplayNotifications(); syncNativeReminders();
+  if(typeof renderBudget==="function") renderBudget();
 });
 
 /* ---------- tabs ---------- */

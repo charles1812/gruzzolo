@@ -96,7 +96,7 @@ with sync_playwright() as p:
             return { vals, sum:vals.reduce((a,b)=>a+b,0), remaining:Math.round(st.remaining), circles, cols:vals.length }; }""")
         check("serbatoio a 4 pezzi: i pezzi sommati = soldi che restano, uguali ai cerchi in alto", fb["cols"] == 4 and fb["sum"] == fb["remaining"] and fb["circles"] == fb["vals"], fb)
         cc = ev("""()=>{ const st=bStatus(), P=st.P, s0=B.start; if(!P.partial) return { skip:true };
-            const conto=s0.left-(P.replayRes||0)-(P.inv||0)-st.T.filter(t=>t.type!=='in').reduce((a,t)=>a+t.amt-(t.buoniVal||0),0);
+            const conto=s0.left-(P.replayRes||0)-(P.inv||0)-(P.save||0)-st.T.filter(t=>t.type!=='in').reduce((a,t)=>a+t.amt-(t.buoniVal||0),0);
             return { remaining:+st.remaining.toFixed(2), conto:+conto.toFixed(2), buoni:st.buoniLeft }; }""")
         check("soldi che restano = conto (partenza − Replay − azioni − spese in soldi veri): i buoni pasto non contano", cc.get("skip") or abs(cc["remaining"] - cc["conto"]) < 0.01, cc)
         # una spesa di shopping oltre la vecchia quota «shopping» non tocca il weekend: il tempo libero è un salvadanaio unico

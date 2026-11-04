@@ -9,7 +9,7 @@ def check(name, ok, info=""):
     res.append(bool(ok)); print(("PASS " if ok else "FAIL ") + name + ("" if ok else "  -- " + json.dumps(info, ensure_ascii=False, default=str)[:500]), flush=True)
 
 EXACT = """()=>{ const st=bStatus(), P=st.P, s0=B.start; const sum=st.groups.reduce((a,g)=>a+g.left,0); if(!P.partial) return { ok:Math.abs(st.remaining-sum)<0.01 };
-  const conto=s0.left-(P.replayRes||0)-(P.inv||0)-st.T.filter(t=>t.type!=='in').reduce((a,t)=>a+t.amt-(t.buoniVal||0),0);
+  const conto=s0.left-(P.replayRes||0)-(P.inv||0)-(P.save||0)-st.T.filter(t=>t.type!=='in').reduce((a,t)=>a+t.amt-(t.buoniVal||0),0);
   return { ok:Math.abs(st.remaining-conto)<0.01 && Math.abs(st.remaining-sum)<0.01, remaining:+st.remaining.toFixed(2), conto:+conto.toFixed(2), sum:+sum.toFixed(2) }; }"""
 
 def add_months(d, k):
@@ -66,6 +66,21 @@ with sync_playwright() as p:
     got = ev("()=>{ const i=loanInfo(B.loans.find(x=>x.n==='Vecchio')); return { done:i.done, left:i.left, cat:B.cats.some(c=>c.n.includes('Vecchio')) }; }")
     check("prestito finito: risulta finito, debito 0, nessuna rata", got["done"] and got["left"] == 0 and not got["cat"], got)
     check("totale ancora esatto", ev(EXACT)["ok"], ev(EXACT))
+    # 5b) dal foglio «aggiungi spesa»: l'icona piccola in fondo apre il prestito (da chi, quanti mesi); non diventa una spesa di oggi
+    ntx = ev("()=>B.tx.length")
+    ev("()=>{ showTab('budget'); openQuickAdd(); }"); time.sleep(0.5)
+    page.locator("#qaAmt").fill("900"); page.locator("#qaNote").fill("Telefono")
+    tap("#qaLoan"); time.sleep(0.4)
+    L = "#lnScrim .loanf"
+    pre = ev(f"()=>({{ n:document.querySelector('{L} .ln-n').value, a:document.querySelector('{L} .ln-a').value, s:document.querySelector('{L} .ln-s').value, open:document.getElementById('lnScrim').classList.contains('open'), qa:document.getElementById('qaScrim').classList.contains('open') }})")
+    exp_s = add_months(dt.date.today(), 1).isoformat()
+    check("«aggiungi spesa» → «È un prestito?»: si apre il prestito con importo, nome e prima rata tra un mese", pre["open"] and not pre["qa"] and pre["n"] == "Telefono" and pre["a"] == "900" and pre["s"] == exp_s, {**pre, "atteso": exp_s})
+    page.locator(f"{L} .ln-w").fill("Findomestic"); page.locator(f"{L} .ln-m").fill("50"); page.locator(f"{L} .ln-k").fill("18")
+    tap(f"{L} [data-ln=\"save\"]"); time.sleep(0.5)
+    got = ev("()=>{ const l=B.loans.find(x=>x.n==='Telefono'); if(!l) return null; const i=loanInfo(l); return { from:l.from, amt:l.amt, end:l.end, N:i.N, cat:B.cats.some(c=>c.loan===l.id&&c.plan===50), tx:B.tx.length, open:document.getElementById('lnScrim').classList.contains('open') }; }")
+    check("prestito dalla spesa salvato: da chi, 18 mesi (ultima rata calcolata), rata nel Budget, nessuna spesa di oggi", got and got["from"] == "Findomestic" and got["amt"] == 900 and got["N"] == 18 and got["end"] == add_months(dt.date.fromisoformat(exp_s), 17).isoformat() and got["cat"] and got["tx"] == ntx and not got["open"], got)
+    check("totale ancora esatto con il prestito nuovo", ev(EXACT)["ok"], ev(EXACT))
+    ev("()=>{ showTab('impostazioni'); renderLoanSettings(); }"); time.sleep(0.4)
     # 6) togli
     tap(f'{W} [data-ln="del"][data-id="{lid}"]'); time.sleep(0.3)
     check("togli il mutuo: sparisce", ev("()=>!B.loans.some(x=>x.n==='Casa')"))

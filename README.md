@@ -49,7 +49,7 @@ Quando paghi con il telefono o arriva la notifica della banca, Gruzzolo legge **
 Per ogni abbonamento metti nome, importo, ogni mese o ogni anno e la data del prelievo. Gruzzolo li tiene nel budget del mese, li mostra in un calendario e, se il pagamento non arriva, ti chiede se è stato pagato. Quelli annuali vengono accantonati un pezzo al mese.
 
 ### 🏦 Prestiti e mutui
-Per mutui, prestiti e finanziamenti metti nome, importo prestato, rata al mese e data della prima rata. Ultima rata e tasso (TAN) sono facoltativi. Gruzzolo ti mostra:
+Per mutui, prestiti e finanziamenti metti nome, importo prestato, rata al mese e data della prima rata. Da chi, quanti mesi, ultima rata e tasso (TAN) sono facoltativi. Si aggiungono dalle Impostazioni, dalla finestra Ricorrenti o direttamente dal foglio «aggiungi spesa» (🏦 «È un prestito o un mutuo?», in fondo): una spesa fatta a rate non conta come spesa di oggi, conta la rata ogni mese. Gruzzolo ti mostra:
 - quanto hai già rimborsato e quanto resta;
 - quante rate hai pagato e quante mancano;
 - quando è iniziato e quando finisce;
@@ -61,12 +61,13 @@ La rata entra da sola nelle spese fisse del mese, con il suo giorno. Se è già 
 In fondo alle Impostazioni, **Azzera tutto e ricomincia** cancella i dati di questo telefono e riparte dalle domande iniziali. Chiede conferma due volte. Prima puoi salvare una copia con «Backup e ripristino».
 
 ### 🌱 Il primo mese
-Fino al primo stipendio preso con l'app non ti chiede di mettere da parte niente: ti aiuta solo a gestire quello che c'è. Dal mese dopo arriva l'obiettivo di risparmio, calcolato sulle tue spese reali.
+L'obiettivo di risparmio vale da subito: dai soldi che hai fino allo stipendio Gruzzolo toglie quello da mettere da parte, e nel Budget vedi solo quello che puoi spendere (in alto c'è scritto quanto è escluso). Il primo mese scegli tu se tenere tutto sul conto o investirne una parte; dal secondo mese la divisione tra liquidità (fondo emergenza) ed ETF la fa il profilo. Per la parte da investire ti propone le quote intere da comprare («Compra 1 × SWDA, 16 × AGGH»): le confermi con «Ho comprato» e entrano nel portafoglio.
 
 ### 📈 Portafoglio e Piano
 - **Portafoglio**: le tue posizioni in ETF come pile di monete 3D che girano su un piatto, con un albero olografico che cresce insieme al valore. I prezzi arrivano da Yahoo Finance. Ci sono anche il grafico del valore nel tempo e l'andamento di oggi e della settimana.
 - **Piano**: quanto puoi investire ogni mese, l'obiettivo (anticipo casa, auto, 100.000 €, libertà finanziaria) e cinque portafogli modello, da Prudente ad Aggressivo. Per ciascuno ci sono le simulazioni Monte Carlo e il caso peggiore, verificati sui dati storici dal 2004 a oggi (vedi [docs/backtest.md](docs/backtest.md)).
-- **Replay**: il piano di accumulo mensile, con i promemoria prima del giorno di acquisto.
+- **Replay**: il piano di accumulo mensile, con i promemoria prima del giorno di acquisto. Può partire dal mese prossimo, se questo mese compri a mano.
+- Con il portafoglio vuoto c'è il tasto per aggiungere le posizioni che hai già o quelle appena comprate.
 
 ### 🏆 Sfide e 📊 Dati
 - **Sfide** sono piccoli obiettivi che si verificano da soli dalle spese segnate: giorni senza spese, weekend leggero, settimana con la schiscetta, 52 settimane…
@@ -160,7 +161,8 @@ Le prove in `tools/` usano l'app vera su un emulatore Android. Si collegano alla
 - `fulltest.py` (domande iniziali, Budget, schede, notifiche, aggiornamenti);
 - `contatoritest.py` (contatori e weekend);
 - `ricorrentitest.py`, `abbonamentotest.py`, `abbonamentimantest.py` (abbonamenti);
-- `prestititest.py` (prestiti e mutui, con l'ammortamento ricontrollato in Python, e «Azzera tutto»);
+- `prestititest.py` (prestiti e mutui, anche dal foglio «aggiungi spesa», con l'ammortamento ricontrollato in Python, e «Azzera tutto»);
+- `primomesetest.py` (risparmio tolto dai soldi da spendere, scelta del primo mese, quote da comprare, Replay dal mese prossimo);
 - `sfidetest.py`, `usertest.py`.
 
 Il giorno dello stipendio del profilo di prova si calcola dalla data di oggi, quindi le prove danno lo stesso risultato in qualsiasi giorno. Girano anche su un Chrome senza interfaccia con `--remote-debugging-port=9334`, che apre la versione web.

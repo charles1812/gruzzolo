@@ -65,7 +65,9 @@ function scopriHtml(){
 function scIdeas(D){
   // idee del momento: schede uguali a quelle della Follia (grafico, 1 anno, 1 mese, peggior calo, rischio)
   const ideas=[];
-  try{ const p=planCompute(); if(p && p.buys && p.buys.length){ const b=p.buys[0]; ideas.push({ cls:"gold", e:"🎯", k:"Prossimo acquisto", n:`${b.n} × ${shortName(b.t)}`, t:b.t, s:D[b.t]||null, px:b.px, go:"piano" }); } }catch(e){}
+  // stesso acquisto di «Scegli cosa comprare»: quote intere con quello che c'è da investire, verso i pesi del profilo
+  try{ const amt=invMonth().toInvest; if(amt>0){ const L=invCands(); invPropose(L,amt); const b=L.filter(x=>x.n>0).sort((a,c)=>c.n*c.px-a.n*a.px)[0];
+    if(b) ideas.push({ cls:"gold", e:"🎯", k:"Prossimo acquisto", n:`${b.n} × ${shortName(b.t)}`, t:b.t, s:D[b.t]||null, px:b.px, go:"piano" }); } }catch(e){}
   const sale=SC_CORE.map(([t,n])=>({ t, n, s:D[t] })).filter(x=>x.s && x.s.off<=-0.07).sort((a,b)=>a.s.off-b.s.off);
   sale.slice(0,2).forEach(x=>ideas.push({ cls:"blue", e:"🏷️", k:`In saldo ${scPct(x.s.off,0)}`, n:x.n, t:x.t, s:x.s }));
   const th=SC_THEMES.map(([t,n,e])=>({ t, n, e, s:D[t] })).filter(x=>x.s).sort((a,b)=>b.s.mom-a.s.mom);

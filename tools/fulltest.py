@@ -70,7 +70,7 @@ def main(stage):
             check("Budget: serbatoio diviso nei 4 budget, la somma fa i soldi che restano", r["hasLq"], r["txt"][:120])
             check("finestre dei cerchi (libero, weekend, spesa, ricorrenti, obiettivo) e movimenti nella pagina", len(r["sections"]) == 6, r["sections"])
             check("Budget senza patrimonio", r["noPatr"])
-            check("primo mese: buoni contati (al massimo i 160 € che hai, non più della spesa dei giorni che restano), niente obiettivo di risparmio", r["partial"] and 100 < r["buoni"] <= 160.01 and r["goal"] == 0 and r["save"] == 0 and r["wants"] > 400, {k: r[k] for k in ("buoni", "goal", "save", "wants")})
+            check("primo mese: buoni contati (al massimo i 160 € che hai, non più della spesa dei giorni che restano), l'obiettivo di risparmio vale già ed è tolto dai soldi da spendere", r["partial"] and 100 < r["buoni"] <= 160.01 and r["goal"] > 0 and 0 < r["save"] <= r["goal"] + 0.01 and r["wants"] >= 0, {k: r[k] for k in ("buoni", "goal", "save", "wants")})
             check("conti a tendina", r["fold"])
             check("modalità non più nel Budget", not r["modesInBudget"])
             # spesa con il +: 22,40 € al supermercato con 5 buoni
