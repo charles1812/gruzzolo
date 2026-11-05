@@ -30,6 +30,7 @@ function forziereHtml(){
     <div class="fz-head" id="fzHead" ${(typeof vzMode==="function"&&vzMode()!=="monete")?'style="display:none"':""}></div>
     ${(typeof vzMode!=="function"||vzMode()==="monete")?`<div class="fz-stage"><canvas id="fzCanvas" aria-label="Le tue monete: una pila per ogni ETF. Tocca una pila per il suo grafico"></canvas><button class="fz-tree ${TREE.on?"on":""}" data-fztree aria-label="${TREE.on?"Nascondi":"Mostra"} l'albero" aria-pressed="${TREE.on}">🌳</button></div>`:vzTopHtml()}
     <div class="fz-cap" id="fzCap" ${(typeof vzMode==="function"&&vzMode()!=="monete")?'style="display:none"':""}></div>
+    ${(typeof vzMode==="function"&&vzMode()==="monete"&&typeof vzChipsHtml==="function")?`<div class="fz-vz">${vzChipsHtml()}</div>`:""}
     ${fzPosHtml(t)}
     ${lv.next?`<div class="fz-next"><div class="fz-nl"><span>Prossimo livello: <b>${lv.next[2]} ${lv.next[1]}</b></span><span class="num">${m0(t.val)} / ${m0(lv.next[0])}</span></div>
       <div class="fz-bar"><i style="width:${Math.min(100,lv.p*100).toFixed(1)}%"></i></div>
@@ -415,6 +416,7 @@ function potHtml(){
   } else if(S>0) h+=`<p class="bnote" style="margin:10px 0 0">${m.done>0?"Questo mese hai già investito la parte prevista.":"Questo mese tutto va sul conto: il fondo emergenza viene prima degli investimenti."}</p>`;
   if(!(first && !ch)) h+=`<p class="bnote" style="margin:8px 0 0">${esc(p.why)}</p>`;
   if(PL.locked) h+=`<button class="add pot-chg" data-lock="open">⚙️ Cambia strategia</button>`;
+  h+=`<button class="btn ghost pot-close" data-pot="close">▴ Chiudi</button>`;
   h+=`</div></details>`;
   return h+fine;     // il serbatoio sostituisce la barra «Investimento del mese»
 }
@@ -485,6 +487,7 @@ document.addEventListener("click",e=>{
     if(a==="edit"){ const v=prompt("Quanti soldi hai da parte da investire (€)?", String(+PL.pot||0).replace(".",",")); if(v==null) return; PL.pot=r2(Math.max(0,num(v))); plSave(); mountPot(); }
     else if(a==="add"){ const amt=+p.dataset.amt||0; PL.pot=r2((+PL.pot||0)+amt); plSave(); B.potAdd=B.potAdd||{}; B.potAdd[p.dataset.key]={ amt, date:ymd(today0()) }; bSave(); mountPot(); if(typeof renderBudget==="function") renderBudget(); toast("Aggiunti "+money(amt)+" da investire"); }
     else if(a==="buy") openInvest();
+    else if(a==="close"){ const d=p.closest("details"); if(d){ d.open=false; POT_OPEN=false; d.scrollIntoView({ block:"nearest" }); } }
     else if(a==="ipo"){ const k=cycleOf().key, I=PL.ipo||{}; B.ipoDone=B.ipoDone||{}; let pp=null; try{ pp=planCompute(); }catch(x){} const v=pp?(pp.toIpo||0):0;
       if(B.ipoDone[k]){ I.saved=r2(Math.max(0,(+I.saved||0)-(+B.ipoDone[k]||v))); delete B.ipoDone[k]; } else { B.ipoDone[k]=v; I.saved=r2((+I.saved||0)+v); }
       PL.ipo=I; plSave(); bSave(); mountPot(); if(typeof ipoMount==="function") ipoMount(); }

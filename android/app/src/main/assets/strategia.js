@@ -200,7 +200,6 @@ function pnRestHtml(R,M){
   const HZ=PL.hz||20;
   let h=stHtml(M, null, HZ, v0, inf);
   if(typeof agBtnHtml==="function") h+=agBtnHtml();          // controllo dell'agente, previsioni e backtest: pagina «Agente e dati»
-  if(typeof ipoHtml==="function") h+=ipoHtml();
   h+=`<p class="pn-disc">Backtest con i rendimenti mensili veri dal 2004 (MSCI World, MSCI EM, obbligazioni globali coperte, tasso BCE). Previsioni ricampionando quegli anni con rendimenti futuri prudenti e la tua inflazione. Non sono previsioni certe né consulenza: la scelta è tua.</p>`;
   return h;
 }

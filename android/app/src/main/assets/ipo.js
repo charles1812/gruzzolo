@@ -1,4 +1,7 @@
-/* ---------- Riserva IPO: soldi liquidi per comprare aziende quando entrano in borsa ----------
+/* ---------- IPO future: aziende che potrebbero entrare in borsa (sezione sotto la Follia) ----------
+   La riserva (soldi messi da parte ogni mese) è stata tolta il 05/11/2026: resta solo l'elenco da seguire con le notizie.
+   Il codice della riserva qui sotto resta per chi l'aveva accesa (PL.ipo.on viene spento all'avvio). ----------
+   (vecchia descrizione) Riserva IPO: soldi liquidi per comprare aziende quando entrano in borsa ----------
    Anthropic, OpenAI, SpaceX… oggi non sono quotate: un privato in Italia non può comprarle. Quando (e se) si quotano,
    di solito le compri dal primo giorno di borsa (Nasdaq/NYSE) dalla tua banca, come un'azione qualsiasi.
    La riserva tiene da parte una percentuale del risparmio di ogni mese (PL.ipo.pct, dopo il fondo emergenza),
@@ -36,3 +39,18 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-ipo]"); i
   else if(a==="edit"){ const v=prompt("Quanto hai da parte per le IPO (€)?", String(I.saved||0).replace(".",",")); if(v==null) return; I.saved=r2(Math.max(0,num(v))); }
   else if(a==="use"){ if(!confirm(`Sposto ${m0(I.saved)} della riserva tra i soldi da investire del Portafoglio?`)) return; PL.pot=r2((+PL.pot||0)+(I.saved||0)); toast(`${m0(I.saved)} pronti da investire`); I.saved=0; }
   ipoAfter(); });
+
+/* riserva spenta per tutti: niente scomparto nel serbatoio, niente quota del risparmio */
+(function(){ const I=ipoState(); if(I.on){ I.on=false; plSave(); } })();
+const IPO_INFO = { anthropic:"Valutazione privata oltre i 100 miliardi; nessuna data ufficiale.", openai:"Struttura in trasformazione verso una società a scopo di lucro; quotazione solo ipotizzata.",
+  spacex:"Le azioni girano solo tra investitori privati; Starlink potrebbe quotarsi per prima.", stripe:"Rimanda la quotazione da anni; vende azioni ai dipendenti in giri privati.",
+  databricks:"Grandi round privati; quotazione attesa ma senza data.", revolut:"Ha la licenza bancaria in UK; si parla di quotazione a Londra o New York." };
+function ipoFutHtml(){
+  const I=ipoState();
+  return `<div class="card sc-crazy-wrap ipo-fut"><div class="sc-t">🚀 IPO future</div>
+    <p class="bnote" style="margin:2px 0 8px">Aziende che potrebbero entrare in borsa. Oggi non si possono comprare: quando si quotano le trovi come un'azione qualsiasi. Niente prodotti «pre-IPO» o token: non sono le azioni vere.</p>
+    ${IPO_LIST.map(c=>`<a class="ipo-f" href="https://news.google.com/search?q=${encodeURIComponent(c.n+" IPO")}&hl=it&gl=IT&ceid=IT:it" target="_blank" rel="noopener"><span class="ipo-e">${c.e}</span><span class="ipo-t"><b>${esc(c.n)}</b><small>${esc(c.s)} · ${esc(IPO_INFO[c.id]||"non quotata")}</small></span><span class="ipo-g">notizie ›</span></a>`).join("")}
+    <p class="bnote" style="margin:8px 0 0">Le prime settimane dopo una quotazione possono salire o scendere del 30-50%: se ne compri, a piccoli pezzi e con soldi che puoi perdere (dentro il 10% degli extra).</p></div>`;
+}
+function ipoFutMount(){ const el=document.getElementById("ipoFut"); if(el) el.innerHTML=ipoFutHtml(); }
+ipoFutMount();

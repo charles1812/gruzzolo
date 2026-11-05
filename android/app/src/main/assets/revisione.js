@@ -107,9 +107,9 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-rv]"); if
 
 function rvDue(){ const r=PL.review; if(!r) return 0; const d=Math.round((today0()-parseYmd(r.date))/86400000); return (r.R.next||RV_EVERY)-d; }
 function rvHtml(part){
-  const D=part==="dati", r=PL.review, R=r&&r.R, hasK=!!(typeof settings!=="undefined" && settings.anthropicKey), due=rvDue(), late=r&&due<=0;
+  const D=part==="dati", IN=part==="inner", r=PL.review, R=r&&r.R, hasK=!!(typeof settings!=="undefined" && settings.anthropicKey), due=rvDue(), late=r&&due<=0;
   const icon={ warn:["!","var(--amber)"], ok:["✓","var(--teal)"], info:["·","var(--cyan)"] };
-  let h=`<section id="${D?"rvData":"rvHost"}"><div class="hud-panel ${late&&!D?"acc-amber":"acc-violet"}" style="--i:7;margin-top:10px"><div class="hud-ph"><span class="t">${D?"agente // previsioni e controllo":"consigli // agente"}</span><span class="tag">${hasK?"AI collegata":"sistema integrato"}</span></div>`;
+  let h=IN?`<section id="rvHost" class="rv-inner"><div class="rv-ih"><span class="hud-label">consigli dell'agente</span><span class="hud-label">${hasK?"agente AI":"sistema integrato"}</span></div>`:`<section id="${D?"rvData":"rvHost"}"><div class="hud-panel ${late&&!D?"acc-amber":"acc-violet"}" style="--i:7;margin-top:10px"><div class="hud-ph"><span class="t">${D?"agente // previsioni e controllo":"consigli // agente"}</span><span class="tag">${hasK?"AI collegata":"sistema integrato"}</span></div>`;
   if(D) h+=`<!--prv-->`;
   if(!D) h+=`<div class="rv-top"><div><span class="hud-label">ultimo controllo</span><b>${r?esc(fmtDateIt(r.date))+" · "+(R.src==="ai"?"agente AI":"integrato"):"mai"}</b></div>
     <div><span class="hud-label">prossimo</span><b class="${late?"c-amber":""}">${!r?"adesso":late?"è ora":"tra "+due+" giorni"}</b></div>
@@ -138,7 +138,7 @@ function rvHtml(part){
     if(R.rischi&&R.rischi.length) h+=`<div class="hud-label" style="margin:8px 0 4px">rischi</div>${R.rischi.map(x=>`<div class="rv-r">⚠ ${esc(x)}</div>`).join("")}`;
   }
   if(!D) h+=`<p class="rv-auto">${RV_BUSY?"Controllo in corso…":hasK?`🤖 Automatico: l'agente AI lo rifà da solo quando è ora e ogni volta che confermi una strategia.${R&&R.cost!=null&&typeof aiEur==="function"?` Ultimo controllo: <b class="num">${aiEur(R.cost)}</b> (i costi sono in Impostazioni).`:""}`:`⚙️ Automatico: il sistema integrato ricontrolla da solo. Con la chiave Anthropic nelle Impostazioni lo fa l'agente AI.`}</p><button class="add rv-more" data-ag="open">📊 Previsioni, backtest e dettagli del controllo in Dati ▸</button>`;
-  h+=`<p class="pn-note">Le vendite e gli acquisti li fai tu dalla tua banca. Non è consulenza: l'agente propone, tu decidi.</p></div></section>`;
+  h+=`<p class="pn-note">Le vendite e gli acquisti li fai tu dalla tua banca. Non è consulenza: l'agente propone, tu decidi.</p>${IN?"":"</div>"}</section>`;
   return h;
 }
-function rvMount(){ const el=document.getElementById("rvHost"); if(el) el.outerHTML=rvHtml(); const d=document.getElementById("rvData"); if(d) d.outerHTML=rvHtml("dati"); }
+function rvMount(){ const el=document.getElementById("rvHost"); if(el) el.outerHTML=rvHtml(el.classList.contains("rv-inner")?"inner":undefined); const d=document.getElementById("rvData"); if(d) d.outerHTML=rvHtml("dati"); }

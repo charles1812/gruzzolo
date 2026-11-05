@@ -9,7 +9,9 @@
 const PF = { range:"1M", data:null, key:"", busy:false, hover:null };
 const PF_R = { "1S":[12,6], "1M":[12,22], "1A":[12,9999], "Totale":[null,9999] };
 /* «Totale»: dal primo acquisto (data della posizione più vecchia), altrimenti 5 anni */
-function pfFirstDate(sel){ const D=holdings.filter(h=>!sel||h.ticker===sel).map(h=>h.date).filter(Boolean).sort(); return D.length?new Date(D[0]+"T00:00:00"):null; }
+/* quando una posizione entra nel portafoglio: la data di acquisto se l'hai messa, altrimenti il giorno in cui l'hai aggiunta su Gruzzolo (dall'id "h<millisecondi>") */
+function pfStart(h){ if(h.date) return new Date(h.date+"T00:00:00").getTime(); const m=/^h(\d{13})/.exec(h.id||""); return m?+m[1]:null; }
+function pfFirstDate(sel){ const D=holdings.filter(h=>!sel||h.ticker===sel).map(pfStart).filter(Boolean).sort((a,b)=>a-b); return D.length?new Date(D[0]):null; }
 async function pfSeries(range, sel){
   let [months, lastN]=PF_R[range]; const first=months==null?pfFirstDate(sel):null;
   if(months==null) months=first?Math.max(1,Math.ceil((Date.now()-first)/(30.44*86400000))+1):60;
@@ -20,11 +22,14 @@ async function pfSeries(range, sel){
   ok.forEach(x=>{ const lastNative=x.pts[x.pts.length-1].c, eur=priceEur(x.h); x.k = lastNative>0 && eur>0 ? eur/lastNative : 1; });
   const days=[...new Set(ok.flatMap(x=>x.pts.map(p=>Math.floor(p.t/86400))))].sort((a,b)=>a-b);
   const idx=ok.map(()=>0), last=ok.map(()=>null), S=[];
-  days.forEach(d=>{ let v=0, have=true;
-    ok.forEach((x,i)=>{ while(idx[i]<x.pts.length && Math.floor(x.pts[idx[i]].t/86400)<=d){ last[i]=x.pts[idx[i]].c; idx[i]++; } if(last[i]==null) have=false; else v+=last[i]*x.k*(+x.h.qty); });
-    if(have) S.push({ t:d*86400, v }); });
-  const S2=first?S.filter(p=>p.t*1000>=first.getTime()-86400000):S;
-  return (S2.length>1?S2:S).slice(-lastN);
+  // ogni giorno: valore e costo delle sole posizioni già nel portafoglio quel giorno; v = guadagno (valore − versato), così un acquisto nuovo non sembra un rialzo
+  ok.forEach(x=>{ x.st=pfStart(x.h); x.cost=typeof costOf==="function"?costOf(x.h):(+x.h.avg||0)*(+x.h.qty||0); });
+  days.forEach(d=>{ let val=0, c=0, have=true, n=0;
+    ok.forEach((x,i)=>{ while(idx[i]<x.pts.length && Math.floor(x.pts[idx[i]].t/86400)<=d){ last[i]=x.pts[idx[i]].c; idx[i]++; }
+      if(x.st && (d+1)*86400000<=x.st) return;                 // non ancora comprata
+      n++; if(last[i]==null) have=false; else { val+=last[i]*x.k*(+x.h.qty); c+=x.cost; } });
+    if(have && n) S.push({ t:d*86400, v:val-c, val, c }); });
+  return S.slice(-lastN);
 }
 async function renderPfChart(force){
   if(!document.getElementById("fzHead")) return;
@@ -42,9 +47,10 @@ function pfPaint(){
   const col=h&&typeof fzColor==="function"?fzColor(gi):"";
   const q=h?(+h.qty||0):0, qs=h?(Math.abs(q-Math.round(q))<0.01?Math.round(q):nf2.format(q)):"";
   const title=h?`<span class="fz-who"><i style="background:${col}"></i>${esc(shortName(h.ticker))} · ${qs} ${Math.round(q)===1?"quota":"quote"}</span><button class="fz-all" data-fzall="1">✕ tutto il portafoglio</button>`
-    :`<span class="fz-who">Il tuo portafoglio</span><small class="muted fz-hint">tocca una pila per vedere quell'ETF</small>`;
-  let ch=`<div class="pfc-ch num muted">${PF.busy?"carico…":"storico non disponibile"}</div>`;
-  if(S && S.length>1){ const d=S[S.length-1].v-S[0].v, pc=S[0].v>0?d/S[0].v:0, up=d>=0;
+    :`<span class="fz-who">Il tuo portafoglio · guadagno</span><small class="muted fz-hint">da quando hai comprato · tocca una pila per un ETF</small>`;
+  const f0=pfFirstDate(PF.sel);
+  let ch=`<div class="pfc-ch num muted">${PF.busy?"carico…":f0&&Date.now()-f0<3*86400000?`l'andamento parte dal ${f0.toLocaleDateString("it-IT",{ day:"numeric", month:"short" })}: servono un paio di giorni di borsa`:"storico non disponibile"}</div>`;
+  if(S && S.length>1){ const L=S[S.length-1], d=L.v-S[0].v, base=(S[0].val||0)+((L.c||0)-(S[0].c||0)), pc=base>0?d/base:0, up=d>=0;
     const from=new Date(S[0].t*1000).toLocaleDateString("it-IT",{ day:"numeric", month:"short", year:"numeric" });
     ch=`<div class="pfc-ch num ${up?"pos":"neg"}">${up?"▲":"▼"} ${money(Math.abs(d))} <span>${up?"+":"−"}${Math.abs(pc*100).toFixed(2).replace(".",",")}%</span> <small class="muted">dal ${from}</small></div>`; }
   head.innerHTML=`<div class="fz-ht">${title}</div><div class="fz-hr">${ch}<div class="pfc-tabs">${tabs}</div></div>`;

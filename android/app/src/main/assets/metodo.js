@@ -80,10 +80,15 @@ function stLockHtml(){ const pn=PL.prof===6?"Su misura":PROFILES[PL.prof].n, has
 if(typeof stHtml==="function"){ const _sh=stHtml; stHtml=function(){
   if(PL.locked){ STG.q=PL.prof; if(PL.prof===6 && PL.cw) STG.cw=Object.assign({}, PL.cw); }
   let h=_sh.apply(this, arguments);
-  if(PL.locked) h=h.replace(/<div class="st-chips">[\s\S]*?<\/div>/, stLockHtml()).replace(/<div class="st-sl">[\s\S]*?<\/div>/, "");
+  if(PL.locked){ h=h.replace(/<div class="st-chips">[\s\S]*?<\/div>/, stLockHtml()).replace(/<div class="st-sl">[\s\S]*?<\/div>/, "");
+    // un solo riquadro: strategia, composizione e consigli dell'agente
+    const k=h.indexOf('</div><div id="stLive">'); if(k>=0) h=h.slice(0,k)+h.slice(k+6);
+    let rv=""; try{ rv=rvHtml("inner"); }catch(e){}
+    const z=h.lastIndexOf("</div></section>"); if(z>=0) h=h.slice(0,z)+"</div>"+rv+"</div></section>";
+    h=h.replace("strategia // portafoglio modello","strategia · portafoglio · agente"); }
   return h; }; }
 if(typeof stLiveHtml==="function"){ const _sl=stLiveHtml; stLiveHtml=function(){ let h=_sl.apply(this, arguments);
-  if(PL.locked) h=h.replace(">tocca per scegliere<", ">🔒 solo da guardare<"); return h; }; }
+  if(PL.locked) h=h.replace(">tocca per scegliere<", ">🔒 solo da guardare<").replace('<div class="hud-panel" style="--i:1;margin-top:10px">','<div class="st-sub">'); return h; }; }
 document.addEventListener("click",e=>{
   if(!PL.locked) return; const b=e.target.closest('[data-st="q"],[data-st="apply"],[data-pn="choose"],[data-pn="pick"]'); if(!b) return;
   e.stopPropagation(); e.preventDefault();
@@ -143,8 +148,7 @@ function mtHtml(){
   const r=PL.review, due=r?rvDue():0;
   S.push({ t:"Ogni tanto: il controllo", s:r&&due>0?"ok":"go",
     d:r?`Ultimo il ${fmtDateIt(r.date)} (${r.R.src==="ai"?"agente AI":"integrato"}), prossimo ${due>0?"tra "+due+" giorni":"adesso"}. Si vende solo se una voce si stacca di oltre 10 punti.`:"Parte da solo appena confermi la strategia." });
-  const ipoOn=PL.ipo&&PL.ipo.on;
-  S.push({ t:"Extra, mai oltre il 10%", s:ipoOn?"ok":"off", d:ipoOn?`Riserva IPO al ${PL.ipo.pct}% del risparmio: liquidi pronti per le quotazioni.`:"Titoli singoli, temi o IPO solo con soldi che puoi perdere, al massimo il 10%: c'è la riserva IPO più sotto." });
+  S.push({ t:"Extra, mai oltre il 10%", s:"off", d:"Titoli singoli, temi o IPO solo con soldi che puoi perdere, al massimo il 10%. Le IPO future sono in fondo al Portafoglio, sotto la Follia." });
   const done=S.filter(x=>x.s==="ok").length, ic={ ok:"✓", go:"…", todo:"○", warn:"!", off:"–" };
   return `<details class="hud-panel mt-p" id="mtP" ${MT_OPEN?"open":""}><summary class="hud-ph"><span class="t">metodo // come si compone</span><span class="tag">${done}/${S.length} a posto ▾</span></summary>
     <p class="pn-note" style="margin:6px 0 2px">Sempre nello stesso ordine: prima la sicurezza, poi il nucleo, poi il resto. Ogni passo si spunta da solo con i tuoi numeri.</p>
@@ -252,12 +256,12 @@ function buyHtml(){
     h+=`<p class="bnote" style="margin:6px 0 0"><b>In un anno</b>: ✋ ${q(tot)||"niente"}${F.rep.length?` · 🔁 ${q(Object.fromEntries(F.rep.map(x=>[x.t,x.n*12])))}`:""}. Prezzi di oggi, ${m0(F.S)} al mese dal Budget.</p>`; }
   return h+`</div>`;
 }
-function mountBuy(){ const el=document.getElementById("buyHost"); if(!el) return; let h=""; try{ h=buyHtml(); }catch(e){} try{ if(typeof rvHtml==="function" && PL.prof) h+=rvHtml(); }catch(e){} el.innerHTML=h; }
+function mountBuy(){ const el=document.getElementById("buyHost"); if(!el) return; let h=""; try{ h=buyHtml(); }catch(e){} el.innerHTML=h; }
 if(typeof mountPot==="function"){ const _mp=mountPot; mountPot=function(){ const r=_mp.apply(this, arguments); mountBuy(); return r; }; }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-buy]"); if(!b) return; BUY_ALL=!BUY_ALL; mountBuy(); });
 
 /* ---------- pagina «Agente e dati»: controllo dell'agente, previsioni, rischio, backtest, confronto, regole ---------- */
-function agBtnHtml(){ return ""; }      // i consigli dell'agente stanno nel Portafoglio, subito sotto «Cosa comprare» (mountBuy)
+function agBtnHtml(){ if(PL.locked) return ""; try{ return rvHtml(); }catch(e){ return ""; } }      // con la strategia bloccata i consigli stanno dentro il riquadro della strategia
 function agRender(){
   const el=document.getElementById("agBody"); if(!el) return;
   if(PL.locked && !ST_MORE){ try{ renderPiano(); }catch(e){} }
