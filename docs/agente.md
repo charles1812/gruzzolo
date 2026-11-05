@@ -34,4 +34,4 @@ L'app e le prove leggono lo stesso file: una lezione aggiunta qui vale subito an
 - Casi con titoli in perdita (minusvalenze), con più conti, con stipendio variabile, con un obiettivo di casa tra 5 anni.
 - Casi «trappola»: l'utente chiede di comprare crypto, leva, prodotti pre-IPO, o di vendere tutto dopo una notizia.
 - Confronto tra modelli (`--modello claude-opus-5-5`) su qualità e costo.
-- Prove con i dati veri di Charles (esportati dall'app, senza nomi).
+- Prove con i dati veri dell'utente (esportati dall'app, senza nomi).
