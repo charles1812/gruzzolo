@@ -354,21 +354,22 @@
 <main class="page" id="page-portafoglio">
 <section id="fzHost"></section>
 <section id="potHost"></section>
+<section id="buyHost"></section>
 <section class="rp-sec" id="rpSec">
-  <div class="card replay rp-card" id="replayCard">
-    <div class="rp-mini">
+  <details class="card replay rp-card" id="replayCard">
+    <summary class="rp-mini">
       <span class="rp-ic">🔁</span>
-      <div class="rp-i"><b>Replay · <span id="rDate">—</span></b><small>tra <span class="num" id="rDays">—</span> giorni · <b class="num" id="rCost">€ —</b> · <span id="rPill"></span></small></div>
-      <button class="rp-b" id="notifyBtn" aria-label="Promemoria">🔔</button>
-      <button class="rp-b" id="editReplayBtn" aria-label="Imposta il Replay">⚙️</button>
-    </div>
+      <div class="rp-i"><b>Replay · <span id="rDate">—</span> · <b class="num" id="rCost">€ —</b></b><small><span id="rpShort"></span> · tra <span class="num" id="rDays">—</span> giorni · <span id="rPill"></span></small></div>
+      <span class="pot-c">▾</span>
+    </summary>
     <div class="rp-parts">
+      <div class="rp-btns"><button class="add" id="notifyBtn" aria-label="Promemoria">🔔</button><button class="add" id="editReplayBtn" aria-label="Imposta il Replay">⚙️ Modifica il Replay</button></div>
       <div class="rp-part"><span class="rp-h">compra da solo ogni mese</span><div id="rBreakdown" class="rp-items"></div></div>
       <div class="rp-part" id="rpPlan"></div>
       <div class="rp-part" id="rpNext"></div>
     </div>
     <div hidden><span id="rIncomePct"></span><div id="notifyNote"></div></div>
-  </div>
+  </details>
 </section>
 <div id="planBody"></div>
 <section id="ideasHost"></section>
@@ -415,6 +416,8 @@
 <section id="newsHost"></section>
 
 </main>
+
+<main class="page" id="page-agente"><div id="agBody"></div></main>
 
 <main class="page" id="page-ai">
   <section>

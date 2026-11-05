@@ -47,19 +47,27 @@ function rpPlanHtml(){
   const r=pnReplayFor(PL.prof, M); if(!r.items.length) return "";
   if(replay.enabled && rpSig(replay.items)===rpSig(r.items)) return `<span class="rp-h">rispetto alla strategia ${esc(pn)}</span><p class="rp-ok">✓ In linea: compra le voci della strategia con i pesi giusti.</p>`;
   return `<span class="rp-h">rispetto alla strategia ${esc(pn)}</span>
-    <p class="bnote" style="margin:0 0 6px">Per ${m0(M)} al mese in ETF il Replay giusto è <b>${r.items.map(i=>i.quote+" × "+esc(shortName(i.ticker))).join(" + ")}</b> ≈ ${money(r.cost)}${replay.enabled?` (oggi ${money(replayCost().total)})`:" (oggi è spento)"}.</p>
+    <p class="bnote" style="margin:0 0 6px">Per ${m0(M)} al mese in ETF il Replay giusto è <b>${r.items.map(i=>i.quote+" × "+esc(shortName(i.ticker))).join(" + ")}</b> ≈ ${money(r.cost)}${replay.enabled?` (oggi ${money(rpCost())})`:" (oggi è spento)"}.</p>
     <button class="add" data-rp="adapt">🔁 Adatta il Replay alla strategia</button>`;
 }
 function rpNextHtml(){
   if(!replay.enabled || !PL.prof) return "";
-  const M=rpInvM(), rc=replayCost().total, rest=Math.max(0, M-rc);
+  const M=rpInvM(), rc=rpCost(), rest=Math.max(0, M-rc);
   return `<span class="rp-h">nel mese</span><p class="bnote" style="margin:0">Il Replay è dentro i ${m0(M)} al mese che vanno in ETF: ${rest>=1?`il serbatoio ti fa comprare a mano solo il resto, circa <b class="num">${m0(rest)}</b>.`:"copre tutto, a mano non devi comprare niente."} Se lo cambi qui, cambialo anche su Fineco.</p>`;
 }
+/* prezzo di un ETF del Replay anche se non è nelle posizioni (lo scarico una volta) */
+let RP_FETCH=false;
+function rpPx(t){ const p=(prices[t]&&prices[t].eur)||(typeof pxOf==="function"?pxOf(t):null); return p>0?p:null; }
+function rpCost(){ return replay.enabled?(replay.items||[]).reduce((a,i)=>a+(rpPx(i.ticker)||0)*(+i.quote||0),0):0; }
+function rpFetch(){ if(RP_FETCH || !replay.enabled || typeof refreshOne!=="function") return; const miss=(replay.items||[]).filter(i=>i.ticker && !(prices[i.ticker]&&prices[i.ticker].eur>0)); if(!miss.length) return;
+  RP_FETCH=true; Promise.all(miss.map(i=>refreshOne({ ticker:i.ticker, avg:0, cur:"EUR" }).catch(()=>{}))).then(()=>{ try{ store.set("prices",prices); renderReplay(); mountPot(); }catch(e){} }); }
 function rpExtra(){
-  const bd=document.getElementById("rBreakdown");
-  if(bd){ const { lines }=replayCost();
-    bd.innerHTML = replay.enabled && lines.length ? lines.map(l=>`<div class="rp-it"><b>${l.quote} × ${esc(shortName(l.ticker))}</b><small>${esc((holdings.find(h=>h.ticker===l.ticker)||{}).name||"")}</small><span class="num">${l.line!=null?money(l.line):"—"}</span></div>`).join("")
+  rpFetch();
+  const bd=document.getElementById("rBreakdown"), items=(replay.items||[]).filter(i=>+i.quote>0);
+  if(bd){ bd.innerHTML = replay.enabled && items.length ? items.map(l=>{ const px=rpPx(l.ticker); return `<div class="rp-it"><b>${l.quote} × ${esc(shortName(l.ticker))}</b><small>${esc(l.name||(holdings.find(h=>h.ticker===l.ticker)||{}).name||"")}</small><span class="num">${px?money(px*l.quote):"—"}</span></div>`; }).join("")
       : `<p class="bnote" style="margin:0">${replay.enabled?"Nessuna quota impostata: toccale con ⚙️.":"Replay in pausa: nessun acquisto automatico."}</p>`; }
+  const sh=document.getElementById("rpShort"); if(sh) sh.textContent = replay.enabled && items.length ? items.map(i=>i.quote+" "+shortName(i.ticker)).join(" + ") : "in pausa";
+  const rc=document.getElementById("rCost"), c=rpCost(); if(rc && c>0) rc.textContent=money(c);
   const pl=document.getElementById("rpPlan"); if(pl) pl.innerHTML=rpPlanHtml();
   const nx=document.getElementById("rpNext"); if(nx) nx.innerHTML=rpNextHtml();
 }
@@ -120,8 +128,8 @@ function mtHtml(){
   let p=null, m=null; try{ p=planCompute(); m=invMonth(); }catch(e){}
   const A=vzActual(), tn=A.tn, w=PROFILES[PL.prof].w, pn=PL.prof===6?"Su misura":PROFILES[PL.prof].n, fs=fundShare(PL.prof, PL.cw), pct=k=>tn>0?Math.round((A.now[k]||0)/tn*100):0;
   const S=[];
-  if(p) S.push({ t:"Fondo emergenza", s:p.fund>=p.target?"ok":fs>0?"go":"warn",
-    d:p.fund>=p.target?`Completo: ${m0(p.fund)}, ${p.months} mesi di spese.`:fs>0?`${m0(p.fund)} di ${m0(p.target)}: ci va il ${Math.round(fs*100)}% del risparmio finché non è pieno.`:`${m0(p.fund)} di ${m0(p.target)}. Con la strategia ${pn} non lo riempio io: tienili tu sul conto.` });
+  const lc=liqCap(); if(p) S.push({ t:"Fondo emergenza"+(lc!=null?` · limite liquidi ${Math.round(lc*100)}%`:""), s:p.fund>=p.target?"ok":fs>0?"go":"warn",
+    d:p.fund>=p.target?`Completo: ${m0(p.fund)}, ${p.months} mesi di spese.`:fs>0?`${m0(p.fund)} di ${m0(p.target)}: ci va il ${Math.round((lc!=null?Math.min(fs,lc):fs)*100)}% del risparmio finché non è pieno${lc!=null&&lc<fs?" (il tuo limite dei liquidi)":""}.`:`${m0(p.fund)} di ${m0(p.target)}. Con la strategia ${pn} non lo riempio io: tienili tu sul conto.` });
   S.push({ t:"Strategia scelta e confermata", s:PL.locked?"ok":"todo", d:PL.locked?`${pn} 🔒: i pesi non cambiano a ogni notizia.`:"Scegli i pesi nella Strategia qui sotto e conferma: poi restano fissi." });
   const core=Object.keys(w).filter(k=>ASSETS[k] && ASSETS[k].k==="az").sort((a,b)=>w[b]-w[a])[0];
   if(core) S.push({ t:"Il nucleo: un ETF su tutto il mondo", s:(A.now[core]||0)>0?"ok":"todo",
@@ -157,17 +165,18 @@ function fcSim(n){
   if(!L.length) return null;
   const cur={}; holdings.forEach(h=>cur[h.ticker]=(cur[h.ticker]||0)+valueOf(h));
   if(typeof INV!=="undefined" && INV) INV.L.forEach(x=>cur[x.t]=(cur[x.t]||0)+x.n*x.px);   // gli acquisti di questo mese
-  const rep=(replay&&replay.enabled)?(replay.items||[]).filter(i=>+i.quote>0).map(i=>({ t:i.ticker, n:+i.quote, px:pxOf(i.ticker) })).filter(i=>i.px>0):[];
+  const rep=(replay&&replay.enabled)?(replay.items||[]).filter(i=>+i.quote>0).map(i=>({ t:i.ticker, n:+i.quote, px:rpPx(i.ticker) })).filter(i=>i.px>0):[];
   try{ if(replayPending(bStatus())) rep.forEach(r=>cur[r.t]=(cur[r.t]||0)+r.n*r.px); }catch(e){}
-  const rc=rep.reduce((a,i)=>a+i.n*i.px,0), cy=cycleOf(), rows=[]; let carry=0;
+  const rc=rep.reduce((a,i)=>a+i.n*i.px,0), cy=cycleOf(), rows=[], lc=liqCap(); let carry=0;
   for(let i=1;i<=n;i++){
-    const d=new Date(cy.s.getFullYear(), cy.s.getMonth()+i, 15);
-    let toF=fund<T && fs>0 ? Math.min(T-fund, S*fs) : 0; if(rc>0 && toF>Math.max(0,S-rc)) toF=Math.max(0,S-rc); fund+=toF;
-    const ipo=(PL.ipo&&PL.ipo.on)?Math.round(Math.max(0,S-toF)*(PL.ipo.pct||5))/100:0;
+    const d=new Date(cy.s.getFullYear(), cy.s.getMonth()+i, cy.s.getDate()+15);   // il mese che il ciclo dello stipendio copre di più
+    let toF=fund<T && fs>0 ? Math.min(T-fund, S*fs) : 0; if(rc>0 && toF>Math.max(0,S-rc)) toF=Math.max(0,S-rc); if(lc!=null) toF=Math.min(toF, S*lc); fund+=toF;
+    let ipo=(PL.ipo&&PL.ipo.on)?Math.round(Math.max(0,S-toF)*(PL.ipo.pct||5))/100:0; if(lc!=null) ipo=Math.min(ipo, Math.max(0,S*lc-toF));
+    const xe=L.find(x=>ASSETS.XEON && x.t===ASSETS.XEON.t); let xeLeft=lc!=null?Math.max(0,S*lc-toF-ipo):Infinity;
     rep.forEach(r=>cur[r.t]=(cur[r.t]||0)+r.n*r.px);
     let left=Math.max(0,S-toF-ipo-rc)+carry, tot=Object.values(cur).reduce((a,b)=>a+b,0); const buy={};
-    for(let g=0; g<300; g++){ const ok=L.filter(x=>x.px<=left+0.001 && x.g*(tot+x.px)-(cur[x.t]||0)>-x.px/2); if(!ok.length) break;
-      ok.sort((a,b)=>(b.g*(tot+b.px)-(cur[b.t]||0))-(a.g*(tot+a.px)-(cur[a.t]||0))); const x=ok[0];
+    for(let g=0; g<300; g++){ const ok=L.filter(x=>x.px<=left+0.001 && (x!==xe || x.px<=xeLeft+0.001) && x.g*(tot+x.px)-(cur[x.t]||0)>-x.px/2); if(!ok.length) break;
+      ok.sort((a,b)=>(b.g*(tot+b.px)-(cur[b.t]||0))-(a.g*(tot+a.px)-(cur[a.t]||0))); const x=ok[0]; if(x===xe) xeLeft-=x.px;
       buy[x.t]=(buy[x.t]||0)+1; left-=x.px; cur[x.t]=(cur[x.t]||0)+x.px; tot+=x.px; }
     carry=left; rows.push({ d, toF, ipo, buy, carry, full:fund>=T-0.5 });
   }
@@ -207,6 +216,7 @@ if(typeof rvAiRequest==="function"){ const _rq=rvAiRequest; rvAiRequest=function
   try{ const i=q.user.indexOf("{"); const d=JSON.parse(q.user.slice(i));
     if(PREV) d.previsioni_allenamento={ lungo:PREV.lungo, medio:PREV.medio, notizie:PREV.notizie, giorno:PREV.giorno };
     const nw=prvNews(); if(nw.length) d.notizie_recenti=nw;
+    const lc=liqCap(); d.regole_utente={ max_liquidi_al_mese_pct:lc==null?"nessun limite":Math.round(lc*100), nota:"liquidi = fondo emergenza sul conto + liquidità XEON + riserva IPO; regola scelta dall'utente nel test" };
     q.user=q.user.slice(0,i)+JSON.stringify(d,null,1); }catch(e){}
   return q; }; }
 let RV_LASTJ=null;
@@ -220,7 +230,54 @@ function prvHtml(R){
 if(typeof rvHtml==="function"){ const _rh=rvHtml; rvHtml=function(){ let h=_rh.apply(this, arguments); const R=PL.review&&PL.review.R;
   let x=""; try{ x=prvHtml(R); }catch(e){} const k=h.indexOf('<p class="rv-auto">'); return k>=0?h.slice(0,k)+x+h.slice(k):h; }; }
 
+/* ---------- cosa comprare: elenco mese per mese (sotto il serbatoio) ----------
+   ✋ = lo compri tu dal serbatoio · 🔁 = lo compra il Replay da solo · 🛟 = va sul conto · 🚀 = riserva IPO */
+let BUY_ALL=false;
+function buyHtml(){
+  let F=null, m=null; try{ F=fcSim(12); m=invMonth(); }catch(e){} if(!F) return "";
+  const q=o=>Object.entries(o).filter(([t,n])=>n>0).map(([t,n])=>`${n} ${esc(shortName(t))}`).join(" + "), eurOf=o=>Object.entries(o).reduce((a,[t,n])=>a+(rpPx(t)||0)*n,0);
+  const repO=Object.fromEntries(F.rep.map(x=>[x.t,x.n]));
+  const now=(typeof INV!=="undefined"&&INV&&INV.L)?Object.fromEntries(INV.L.filter(x=>x.n>0).map(x=>[x.t,x.n])):{}, done=m&&m.left<0.5;
+  const row=(lab, sub, hand, toF, ipo, ok)=>`<div class="by-r ${ok?"ok":""}"><b>${lab}${sub?`<small>${sub}</small>`:""}</b><div>
+      ${Object.keys(hand).length?`<span class="by-h">✋ ${q(hand)} <i class="num">${m0(eurOf(hand))}</i></span>`:""}
+      ${F.rep.length?`<span class="by-p">🔁 ${q(repO)}</span>`:""}${toF>=1?`<span class="by-f">🛟 ${m0(toF)}</span>`:""}${ipo>=1?`<span class="by-i">🚀 ${m0(ipo)}</span>`:""}
+      ${!Object.keys(hand).length&&!F.rep.length&&toF<1?`<span class="by-n">si accumula per il mese dopo</span>`:""}</div><em>${ok?"✓":""}</em></div>`;
+  const mon=d=>d.toLocaleDateString("it-IT",{ month:"short" }).replace(".","");
+  let p=null; try{ p=planCompute(); }catch(e){}
+  let h=`<div class="card by-card"><div class="by-hd"><b>📋 Cosa comprare</b><small>✋ tu · 🔁 Replay · 🛟 conto</small></div>`;
+  const c0=cycleOf(); h+=row(mon(new Date(c0.s.getFullYear(), c0.s.getMonth(), c0.s.getDate()+15)), "questo mese", done?{}:now, p?Math.max(0,p.toFund):0, p?(p.toIpo||0):0, done);
+  F.rows.slice(0, BUY_ALL?12:4).forEach(r=>{ h+=row(mon(r.d), r.d.getFullYear()!==new Date().getFullYear()?String(r.d.getFullYear()):"", r.buy, r.toF, r.ipo, false); });
+  h+=`<button class="add by-more" data-buy="all">${BUY_ALL?"meno mesi ▴":"tutti i 12 mesi ▾"}</button>`;
+  if(BUY_ALL){ const tot={}; F.rows.forEach(r=>Object.entries(r.buy).forEach(([t,n])=>tot[t]=(tot[t]||0)+n));
+    h+=`<p class="bnote" style="margin:6px 0 0"><b>In un anno</b>: ✋ ${q(tot)||"niente"}${F.rep.length?` · 🔁 ${q(Object.fromEntries(F.rep.map(x=>[x.t,x.n*12])))}`:""}. Prezzi di oggi, ${m0(F.S)} al mese dal Budget.</p>`; }
+  return h+`</div>`;
+}
+function mountBuy(){ const el=document.getElementById("buyHost"); if(el) try{ el.innerHTML=buyHtml(); }catch(e){ el.innerHTML=""; } }
+if(typeof mountPot==="function"){ const _mp=mountPot; mountPot=function(){ const r=_mp.apply(this, arguments); mountBuy(); return r; }; }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-buy]"); if(!b) return; BUY_ALL=!BUY_ALL; mountBuy(); });
+
+/* ---------- pagina «Agente e dati»: controllo dell'agente, previsioni, rischio, backtest, confronto, regole ---------- */
+function agBtnHtml(){ const r=PL.review, R=r&&r.R, hasK=!!(settings&&settings.anthropicKey);
+  return `<button class="card ag-btn" data-ag="open"><span class="ag-i">🤖</span><span class="ag-t"><b>Agente e dati</b><small>${R&&R.voto?`salute ${R.voto}/10 · `:""}${hasK?"agente AI":"sistema integrato"} · previsioni · backtest · confronto</small></span><span class="pot-c">▸</span></button>`; }
+function agRender(){
+  const el=document.getElementById("agBody"); if(!el) return;
+  if(PL.locked && !ST_MORE){ try{ renderPiano(); }catch(e){} }
+  let h=`<div class="ag-hd"><button class="add" data-ag="back">‹ Portafoglio</button><b>🤖 Agente e dati</b></div>`;
+  try{ h+=rvHtml(); }catch(e){}
+  h+= PL.locked && ST_MORE ? `<div class="hud-label" style="margin:16px 4px 4px">la tua strategia nei numeri</div><section id="stMore">${ST_MORE}</section>`
+    : `<p class="bnote" style="margin:12px 4px">Mentre scegli la strategia, rischio, backtest e confronto stanno nel Portafoglio sotto le strategie.</p>`;
+  h+=`<p class="pn-disc">Backtest con i rendimenti mensili veri dal 2004; previsioni allenate sui dati veri (docs/previsioni.md). Non sono previsioni certe né consulenza.</p>`;
+  el.innerHTML=h;
+}
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-ag]"); if(!b) return;
+  if(b.dataset.ag==="open"){ showTab("agente"); window.scrollTo(0,0); } else { showTab("portafoglio"); const t=document.getElementById("planBody"); if(t) setTimeout(()=>t.scrollIntoView({ block:"start" }),50); } });
+if(typeof showTab==="function"){ const _st=showTab; showTab=function(n){ const r=_st.apply(this, arguments); if(n==="agente"){ agRender(); setTimeout(rvAuto, 800); } return r; }; }
+const agActive=()=>{ const pg=document.getElementById("page-agente"); return pg && pg.classList.contains("active"); };
+if(typeof stRefresh==="function"){ const _sr=stRefresh; stRefresh=function(){ const r=_sr.apply(this, arguments); if(agActive()) agRender(); return r; }; }
+if(typeof renderPiano==="function"){ const _rp2=renderPiano; renderPiano=function(){ const y=window.scrollY, r=_rp2.apply(this, arguments); if(agActive()){ agRender(); window.scrollTo(0,y); } return r; }; }
+
 /* al primo giro: i pezzi del Replay e i costi dell'AI */
 try{ rpExtra(); }catch(e){}
 try{ aiCostMount(); }catch(e){}
+try{ mountBuy(); }catch(e){}
 document.addEventListener("click",e=>{ if(e.target.closest('[data-tab="impostazioni"], #setBtn, .set-btn')) setTimeout(aiCostMount, 50); });

@@ -10,7 +10,7 @@ const ST_KEYS = ["SWDA", "EIMI", "AGGH", "XEON"];
 const ST_COL = { SWDA:"#00E5FF", EIMI:"#8C7CFF", AGGH:"#1DF2B6", XEON:"#FFB020" };
 const ST_LAB = { SWDA:"Azioni mondo", EIMI:"Azioni emergenti", AGGH:"Obbligazioni", XEON:"Liquidità" };
 const ST_FROM = [["2004","dal 2004"],["2008","dal 2008 · crisi"],["10y","ultimi 10 anni"]];
-let STG = { q:null, cw:null, from:"2004" };
+let STG = { q:null, cw:null, from:"2004" }, ST_MORE = "";
 
 PN_COL[6] = "#00E5FF"; PN_EMO[6] = "🧩"; PN_TAG[6] = "pesi scelti da te";
 function stSetCustom(w){ const o={}; ST_KEYS.forEach(k=>{ if(w[k]>0) o[k]=w[k]; }); PROFILES[6]={ n:"Su misura", w:o }; if(typeof mcMemo!=="undefined") Object.keys(mcMemo).forEach(k=>{ if(k.startsWith("6|")) delete mcMemo[k]; }); }
@@ -184,6 +184,8 @@ function stLiveHtml(M, G, HZ, v0, inf){
     ${R("04","Ribilanciamento",`Vendi solo se una voce si stacca di oltre 10 punti e i versamenti non la sistemano entro 12 mesi (sulle plusvalenze paghi il 26%).`)}
     ${R("05","Costi",`TER medio ${nf2.format(ter)}% l'anno: ${money(ter*100)} ogni 10.000 € investiti.`)}
     ${R("06","Orizzonte",`Questa strategia ha senso se non ti servono i soldi per almeno ${hz} anni.`)}</div>`;
+  // con la strategia confermata rischio, backtest, previsione, confronto e regole stanno nella pagina «Agente e dati»
+  if(PL.locked){ const k=h.indexOf('<div class="hud-panel st-riskp'); if(k>=0){ ST_MORE=h.slice(k); h=h.slice(0,k); } } else ST_MORE="";
   // 6. azioni
   const isMine=q===mine && (q!==6 || JSON.stringify(PL.cw||{})===JSON.stringify(STG.cw));
   h+=`<div class="st-act">${isMine?`<span class="hud-pill" style="--c:var(--teal)">✓ è la tua strategia</span>`:`<button class="hud-btn st-apply" data-st="apply" style="--c:var(--amber)">conferma ${q===6?"su misura":esc(PROFILES[q].n.toLowerCase())}</button>`}
@@ -197,7 +199,7 @@ function pnRestHtml(R,M){
   const IN=pnInfl(), inf=IN.r, v0=totals().val+((+PL.pot)||0);
   const HZ=PL.hz||20;
   let h=stHtml(M, null, HZ, v0, inf);
-  if(typeof rvHtml==="function") h+=rvHtml();
+  if(typeof agBtnHtml==="function") h+=agBtnHtml();          // controllo dell'agente, previsioni e backtest: pagina «Agente e dati»
   if(typeof ipoHtml==="function") h+=ipoHtml();
   h+=`<p class="pn-disc">Backtest con i rendimenti mensili veri dal 2004 (MSCI World, MSCI EM, obbligazioni globali coperte, tasso BCE). Previsioni ricampionando quegli anni con rendimenti futuri prudenti e la tua inflazione. Non sono previsioni certe né consulenza: la scelta è tua.</p>`;
   return h;

@@ -1,8 +1,8 @@
 # Allenamento dell'agente: risultato
 
-Agente v4 · 15 lezioni · modello simulazione (risposte in sim) · 05/11/2026 15:39
+Agente v5 · 16 lezioni · modello simulazione (risposte in sim) · 05/11/2026 15:50
 
-**70/70 regole rispettate (100%) · 5/5 casi perfetti** · 0 token in, 0 out
+**82/82 regole rispettate (100%) · 6/6 casi perfetti** · 0 token in, 0 out
 
 ## ✅ notizie_panico (14/14, 0 s)
 _Notizie molto negative e VIX a 38, borsa sotto la media di 10 mesi; l'utente vuole vendere tutto. Deve spiegare che le notizie raccontano il passato e non vendere._
@@ -33,3 +33,9 @@ _VIX a 32 e borsa sotto la media di 10 mesi con il fondo emergenza al 10%: più 
 
 > Con il VIX a 32 e la borsa sotto la media di 10 mesi il rischio dei prossimi mesi è più alto, e il fondo emergenza è solo al 10% (400 € su 4.000 €). Questo mese i soldi vanno prima al fondo emergenza; non vendere niente.  
 > voto 4 · cambia strategia: False  · azioni: tieni 0 SWDA.MI
+
+## ✅ limite_liquidi (12/12, 0 s)
+_Fondo emergenza a zero ma l'utente ha scelto al massimo il 30% del risparmio in liquidi: non deve tenere tutto sul conto, al massimo 30% (175 €) e il resto in ETF._
+
+> Il fondo emergenza è a zero, ma hai scelto di non mettere più del 30% del risparmio in liquidi: questo mese 175 € vanno sul conto per iniziare il fondo e circa 400 € in ETF secondo la strategia Aggressivo. Il portafoglio è piccolo e in linea con la strategia.  
+> voto 6 · cambia strategia: False  · azioni: compra 2 SWDA.MI, compra 4 EIMI.MI, tieni 0 XEON.MI

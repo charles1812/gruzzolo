@@ -414,7 +414,6 @@ function potHtml(){
     else h+=`<div id="invInline">${invListHtml(true)}</div>`;
   } else if(S>0) h+=`<p class="bnote" style="margin:10px 0 0">${m.done>0?"Questo mese hai già investito la parte prevista.":"Questo mese tutto va sul conto: il fondo emergenza viene prima degli investimenti."}</p>`;
   if(!(first && !ch)) h+=`<p class="bnote" style="margin:8px 0 0">${esc(p.why)}</p>`;
-  if(typeof fcHtml==="function") h+=fcHtml();
   if(PL.locked) h+=`<button class="add pot-chg" data-lock="open">⚙️ Cambia strategia</button>`;
   h+=`</div></details>`;
   return h+fine;     // il serbatoio sostituisce la barra «Investimento del mese»
@@ -449,6 +448,9 @@ function invCands(){
   const L=[], add=(t,name,goal)=>{ if(L.some(x=>x.t===t)) return; const px=(typeof pxOf==="function"?pxOf(t):null) ?? (prices[t]&&prices[t].eur); if(!(px>0)) return; L.push({ t, name, goal, px, n:0 }); };
   let p=null; try{ p=PL.prof?planCompute():null; }catch(e){}
   if(p && p.weights) p.weights.filter(w=>w.goal>0).forEach(w=>add(ASSETS[w.k].t, ASSETS[w.k].n, w.goal/100));
+  // limite dei liquidi (test del rischio): la liquidità (XEON) conta insieme a fondo emergenza e riserva IPO
+  const lc=typeof liqCap==="function"?liqCap():null;
+  if(lc!=null && p){ const x=L.find(x=>ASSETS.XEON && x.t===ASSETS.XEON.t); if(x) x.maxN=Math.floor(Math.max(0, p.S*lc-p.toFund-(p.toIpo||0))/x.px); }
   const tot=holdings.reduce((a,h)=>a+valueOf(h),0)||1;
   holdings.forEach(h=>add(h.ticker, h.name||h.ticker, p?0:valueOf(h)/tot));
   return L;
@@ -458,7 +460,7 @@ function invPropose(L, money0){
   try{ if(replay && replay.enabled && typeof replayPending==="function" && replayPending(bStatus())) (replay.items||[]).forEach(i=>{ const px=pxOf(i.ticker); if(px>0) cur[i.ticker]=(cur[i.ticker]||0)+px*(+i.quote||0); }); }catch(e){}
   let left=money0, tot=Object.values(cur).reduce((a,b)=>a+b,0);
   L.forEach(x=>x.n=0);
-  for(let k=0;k<300;k++){ const ok=L.filter(x=>x.px<=left+0.001 && x.goal>0 && x.goal*(tot+x.px)-(cur[x.t]||0)>-x.px/2); if(!ok.length) break;   // non compro quello che finirebbe troppo sopra il peso: il resto aspetta il mese dopo
+  for(let k=0;k<300;k++){ const ok=L.filter(x=>x.px<=left+0.001 && x.goal>0 && (x.maxN==null || x.n<x.maxN) && x.goal*(tot+x.px)-(cur[x.t]||0)>-x.px/2); if(!ok.length) break;   // non compro quello che finirebbe troppo sopra il peso: il resto aspetta il mese dopo
     ok.sort((a,b)=>(b.goal*(tot+b.px)-(cur[b.t]||0))-(a.goal*(tot+a.px)-(cur[a.t]||0)));
     const x=ok[0]; x.n++; left-=x.px; cur[x.t]=(cur[x.t]||0)+x.px; tot+=x.px; }
 }

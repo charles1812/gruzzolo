@@ -213,7 +213,7 @@ main.page .st-in{border-radius:50% !important; background:var(--bg); border:2px 
 .reset-box .gt{color:var(--red)}
 
 /* ---------- Strategia (Piano) ---------- */
-#stTool .hud-panel{margin:0}
+#stTool .hud-panel, #stMore .hud-panel{margin:0}
 .st-chips{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
 .st-chip{position:relative; background:#060C12; border:1px solid var(--line); color:var(--text); padding:7px 6px; text-align:left; font:inherit; cursor:pointer}
 .st-chip small{display:block; font-size:9px; letter-spacing:1.5px; color:var(--dim)} .st-chip b{font-size:12px; font-weight:600}
@@ -254,8 +254,8 @@ main.page .st-in{border-radius:50% !important; background:var(--bg); border:2px 
 .st-act{display:grid; gap:8px; margin-top:12px}
 .st-act .hud-btn{width:100%; text-align:center}
 .st-act .hud-pill{justify-self:start; font-size:11px; padding:6px 10px}
-#stTool .hud-kv > :first-child{width:auto; flex:1; min-width:0}
-#stTool .hud-kv > :last-child{flex:none}
+#stTool .hud-kv > :first-child, #stMore .hud-kv > :first-child{width:auto; flex:1; min-width:0}
+#stTool .hud-kv > :last-child, #stMore .hud-kv > :last-child{flex:none}
 .st-gauge{max-width:140px}
 .st-3d{display:block; width:100%; height:220px; touch-action:pan-y; cursor:grab}
 .st-3dn{margin:2px 0 8px; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#5E7884; text-align:center}
@@ -367,3 +367,44 @@ main.page .st-in{border-radius:50% !important; background:var(--bg); border:2px 
 .prv-r{display:grid; grid-template-columns:78px 1fr; gap:8px; padding:6px 0; border-top:1px solid #0E222B; font-size:12px; line-height:1.45}
 .prv-r b{font:600 10px ui-monospace,Consolas,monospace; letter-spacing:1px; text-transform:uppercase; color:#8C7CFF; padding-top:2px}
 .prv-r span{color:#D3E9F0}
+/* legenda della sfera: tastino che si apre */
+details.vz-leg{margin:0 4px 6px; padding:0; border:none; background:none}
+details.vz-leg > summary{display:inline-block; cursor:pointer; list-style:none; font:600 10px ui-monospace,Consolas,monospace; letter-spacing:1px; text-transform:uppercase; color:#00E5FF; border:1px solid #17323D; padding:3px 8px; background:rgba(0,229,255,.06)}
+details.vz-leg > summary::-webkit-details-marker{display:none}
+details.vz-leg[open] > summary{background:rgba(0,229,255,.14)}
+.vz-lb{margin-top:6px; padding:6px 10px; border:1px solid #17323D; background:rgba(9,17,26,.6)}
+/* Replay compatto */
+details.rp-card > summary{list-style:none; cursor:pointer}
+details.rp-card > summary::-webkit-details-marker{display:none}
+.rp-card .rp-mini{padding:8px 12px; gap:10px}
+.rp-card .rp-ic{font-size:18px}
+.rp-card .rp-i b{font-size:13px} .rp-card .rp-i small{font-size:11px}
+.rp-btns{display:flex; gap:12px; padding-top:4px}
+/* cosa comprare */
+.by-card{padding:10px 12px}
+.by-hd{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px}
+.by-hd b{font-size:14px} .by-hd small{font-size:10.5px; color:var(--muted,#5E7884)}
+.by-r{display:grid; grid-template-columns:62px 1fr 14px; gap:6px; align-items:start; padding:6px 0; border-top:1px dashed rgba(94,120,132,.25); font-size:12.5px}
+.by-r > b{font:600 11px ui-monospace,Consolas,monospace; text-transform:uppercase; color:#D3E9F0} .by-r > b small{display:block; color:#5E7884; font-size:9.5px; text-transform:none}
+.by-r > div{display:flex; flex-wrap:wrap; gap:3px 10px}
+.by-r i{font-style:normal; color:#5E7884; font-size:11px}
+.by-r > em{font-style:normal; color:#1DF2B6}
+.by-r.ok > div{opacity:.55}
+.by-h{color:#FFB020} .by-p{color:#00E5FF} .by-f{color:#7fd6d0} .by-i{color:#c9b8ff} .by-n{color:#5E7884}
+.by-more{margin-top:6px; font-size:12px}
+/* pulsante e pagina «Agente e dati» */
+.ag-btn{display:flex; align-items:center; gap:10px; width:100%; margin-top:10px; padding:10px 12px; text-align:left; color:inherit; font:inherit; cursor:pointer}
+.ag-i{font-size:20px} .ag-t{flex:1; min-width:0} .ag-t b{display:block; font-size:14px} .ag-t small{display:block; font-size:11px; color:var(--muted,#5E7884)}
+.ag-hd{display:flex; align-items:center; gap:12px; margin:4px 0 8px} .ag-hd b{font-size:15px}
+#page-agente{padding-bottom:110px}
+/* proposta di strategia dell'agente */
+.rv-prop{margin-top:10px; padding:9px 10px; border:1px solid rgba(255,176,32,.4); background:rgba(255,176,32,.06)}
+.rv-prop > b{display:block; font-size:13px; margin-bottom:6px}
+.rv-cmp{display:grid; grid-template-columns:1fr 1fr; gap:2px 14px; font-size:12px}
+.rv-cmp > div{display:flex; justify-content:space-between}
+.rv-pb{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap}
+.rv-a > span > b{font-weight:650}
+.rv-a > b{min-width:14px; font-size:12px}
+.rv-a > span{display:block; font-size:12.5px; line-height:1.45; color:#D3E9F0}
+.rv-a > span > b{font-size:12.5px; letter-spacing:0; white-space:normal; min-width:0}
+.rv-a > span > small{display:block; margin-top:2px}

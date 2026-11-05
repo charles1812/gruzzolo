@@ -39,6 +39,8 @@ const EMERG_MONTHS = { stabile:3, medio:4, variabile:6 };
 /* quanto del risparmio del mese va sul conto (fondo emergenza) finché il fondo non è pieno: lo decide la strategia.
    Aggressivo = tutto investito; su misura = in proporzione a quanto è prudente (liquidità e obbligazioni). */
 const FUND_SHARE = { 1:.7, 2:.5, 3:.35, 4:.2, 5:0 };
+/* limite dei liquidi al mese scelto nel test (PL.ans.maxLiq: "0","10",…,"no"): frazione del risparmio, o null = nessun limite */
+function liqCap(){ const v=(PL.ans||{}).maxLiq; return v==null||v===""||v==="no" ? null : Math.max(0, Math.min(1, (+v)/100)); }
 function fundShare(q,cw){ q=q||PL.prof||3; if(q===6){ const w=cw||PL.cw||{}; return Math.min(.7, Math.max(0, ((w.XEON||0)+(w.AGGH||0)*.5)/100)); } return FUND_SHARE[q]!=null?FUND_SHARE[q]:.35; }
 /* limiti del profilo: verificati sulle finestre storiche (tools/backtest.py) */
 const HCAP = { lt3:1, "3_5":2, "5_7":3, "7_10":4, gt10:5 };
@@ -125,6 +127,8 @@ function riskQHtml(a, attr){
   let h=q("orizz","Fra quanto potresti aver bisogno di questi soldi?",[["lt3","Entro 3 anni"],["3_5","3–5 anni"],["5_7","5–7 anni"],["7_10","7–10 anni"],["gt10","Oltre 10 anni"]],
     "È la domanda più importante: più tempo hai, più puoi aspettare che un calo si riassorba. Per una casa fra 2 anni le azioni non vanno bene, per la pensione sì.");
   h+=q("lavoro","Il tuo reddito è…",[["stabile","Stabile (indeterminato)"],["medio","Abbastanza stabile"],["variabile","Variabile o precario"]],"Decide quanti mesi di spese tenere da parte nel fondo emergenza: 3, 4 o 6.");
+  h+=q("maxLiq","Ogni mese, quanto al massimo vuoi mettere in liquidi?",[["0","Niente"],["10","10%"],["20","20%"],["30","30%"],["50","50%"],["no","Nessun limite"]],
+    "Liquidi = fondo emergenza sul conto, liquidità (XEON) e riserva IPO. Il resto del risparmio va in ETF. È una regola tua: la rispettano il serbatoio, gli acquisti e l'agente. Con un limite basso il fondo emergenza si riempie più piano.");
   h+=`<div class="q"><div class="qt">Quale di questi portafogli ti farebbe dormire tranquillo?</div><div class="qsub">Esempio con <b>${eur0.format(X)}</b> investiti. Numeri veri dal ${HIST?monthIt(HIST.from):"gennaio 2004"} a oggi, crisi del 2008 compresa.</div><div class="pcards">`;
   for(let p=1;p<=5;p++){
     const s=HS(p), st=profStats(p);
@@ -200,7 +204,11 @@ function planCompute(){
   const rcM=(!firstM && replay && replay.enabled && (!ms.st || replayPending(ms.st))) ? replayCost().total : 0;
   if(rcM>0 && toFund>Math.max(0,S-rcM)){ toFund=Math.max(0,S-rcM); if(fund<target) why=`Il Replay (${m0(rcM)}) continua ogni mese; il resto del risparmio va al fondo emergenza finché non arriva a ${m0(fund<ess?ess:target)}.`; }
   // riserva IPO (ipo.js): una parte di quello che resta dopo il fondo emergenza rimane liquida per le quotazioni
-  const toIpo=(PL.ipo && PL.ipo.on) ? Math.round(Math.max(0,S-toFund)*(PL.ipo.pct||5))/100 : 0;
+  // limite tuo: al massimo una parte del risparmio in liquidi (fondo emergenza + riserva IPO + liquidità), tranne se il primo mese hai scelto di tenere tutto
+  const lc=liqCap(), keepAll=firstM && (B.firstInv||{})[ms.st.cy.key]!=="inv";
+  if(lc!=null && !keepAll && toFund>S*lc){ toFund=S*lc; why+=` Il tuo limite: al massimo il ${Math.round(lc*100)}% del risparmio in liquidi, il resto in ETF.`; }
+  let toIpo=(PL.ipo && PL.ipo.on) ? Math.round(Math.max(0,S-toFund)*(PL.ipo.pct||5))/100 : 0;
+  if(lc!=null && !keepAll) toIpo=Math.min(toIpo, Math.max(0, Math.round((S*lc-toFund)*100)/100));
   const inv=Math.max(0,S-toFund-toIpo);
 
   // valori attuali per voce del modello; i titoli singoli e gli ETF fuori modello contano come azioni dei paesi sviluppati

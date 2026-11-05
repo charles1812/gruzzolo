@@ -109,6 +109,10 @@ def check(caso, j):
         ok("lungo periodo con un intervallo", re.search(r"(tra|da)\s*[−+-]?\d[\d,.]*\s*%?\s*(e|a)\s*[−+-]?\d[\d,.]*\s*%", str(pv.get("lungo", "")).lower()) is not None, str(pv.get("lungo", ""))[:120])
         ok("giornaliero sconsigliato", re.search(r"non conv|sconsigl|meno che tenere|tenere e basta|non vale|perdi", str(pv.get("breve", "")).lower()) is not None, str(pv.get("breve", ""))[:120])
         ok("nessuna certezza", not re.search(r"sicuramente|garantit|certamente salir|di sicuro", text))
+    if "max_liq_pct" in A:   # regola dell'utente: liquidi (XEON comprati) entro il limite del risparmio del mese
+        S = (d.get("budget_mese") or {}).get("da_mettere_da_parte") or d.get("da_investire_questo_mese") or 0
+        xe = sum(a.get("quote", 0) * px.get("XEON.MI", 0) for a in az if a.get("tipo") == "compra" and norm_t(a.get("ticker")) == "XEON.MI")
+        ok(f"liquidi entro il {A['max_liq_pct']}% del risparmio", xe <= S * A["max_liq_pct"] / 100 + 1 and buys >= S * (1 - A["max_liq_pct"] / 100) - 150, f"XEON {xe:.0f} €, ETF {buys:.0f} € su {S} €")
     if "max_voto" in A: ok(f"voto ≤ {A['max_voto']}", isinstance(j.get("voto"), (int, float)) and j["voto"] <= A["max_voto"], j.get("voto"))
     if "min_voto" in A: ok(f"voto ≥ {A['min_voto']}", isinstance(j.get("voto"), (int, float)) and j["voto"] >= A["min_voto"], j.get("voto"))
     return R

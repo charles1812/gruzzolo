@@ -15,7 +15,8 @@ Non fa ordini veri: gli acquisti e le vendite li fa l'utente dalla sua banca.
 | Scheda | Cosa c'è |
 |---|---|
 | 01 Budget | soldi che restano, i quattro budget (Tempo libero, Weekend, Spesa, Ricorrenti), spese dalle notifiche di Google Wallet e dagli SMS Fineco, prestiti, primo mese |
-| 02 Portafoglio | valore, **un solo grafico in cima** (sfera, monete o altri 8, scelta sotto il grafico o nelle Impostazioni), posizioni, serbatoio del mese, sezione Replay, Piano (metodo in 7 passi, strategia, controllo dell'agente, riserva IPO), idee, Follia, notizie |
+| 02 Portafoglio | valore, **un solo grafico in cima** (sfera con il tastino «legenda», monete o altri 8), posizioni, serbatoio del mese, **📋 Cosa comprare** (mese per mese: ✋ tu, 🔁 Replay, 🛟 conto), Replay (riga che si apre), Piano (metodo in 7 passi, strategia bloccata, tasto **🤖 Agente e dati**, riserva IPO), idee, Follia, notizie |
+| Agente e dati | pagina a parte (`page-agente`, dal tasto nel Portafoglio): controllo dell'agente con i consigli in frasi, previsioni, e con la strategia bloccata rischio, backtest, previsione, confronto e regole |
 | ＋ | aggiungi spesa / entrata / prestito |
 | 03 Sfide | sfide di risparmio |
 | 04 Dati | costo della vita (Eurostat, carburanti), i miei dati |
@@ -23,7 +24,7 @@ Non fa ordini veri: gli acquisti e le vendite li fa l'utente dalla sua banca.
 ## Come funziona il Portafoglio (il cuore)
 1. **Budget → mese**: `modePlan(B.mode).save` = quanto mettere da parte (le rate dei prestiti si prendono dal tempo libero o dal risparmio con `B.loanSplit`).
 2. **Strategia** (`strategia.js`): profilo 1–5 o «Su misura» (pesi di SWDA, EIMI, AGGH, XEON). Si **conferma** e resta **bloccata** (`PL.locked`); si cambia solo dal serbatoio → «⚙️ Cambia strategia».
-3. **Serbatoio del mese** (`forziere.js`, `potHtml`): fondo emergenza (`fundShare`: Prudente 70% … Aggressivo 0%), riserva IPO (`ipo.js`), il resto in ETF. Proposta di quote intere (`invCands`/`invPropose`) con − e +, «Ho comprato», «📅 Prossimi 12 mesi» (`fcSim` in `metodo.js`).
+3. **Serbatoio del mese** (`forziere.js`, `potHtml`): fondo emergenza (`fundShare`: Prudente 70% … Aggressivo 0%), riserva IPO (`ipo.js`), il resto in ETF. **Limite dei liquidi** scelto nel test del rischio (`PL.ans.maxLiq`, `liqCap()`): fondo + XEON + riserva IPO non superano quella parte del risparmio. Proposta di quote intere (`invCands`/`invPropose`) con − e +, «Ho comprato». Sotto: «📋 Cosa comprare» (`buyHtml`/`fcSim` in `metodo.js`).
 4. **Replay** (sezione `#rpSec`): cosa compra da solo, se è in linea con la strategia (`pnReplayFor`), quanto resta a mano. Il giorno del Replay le quote entrano da sole (`replayAutoApply`).
 5. **Controllo** (`revisione.js`): parte da solo (`rvAuto` in `metodo.js`) quando è ora o quando cambia la strategia. Con la chiave lo fa l'agente AI (istruzioni e lezioni in `assets/agente.json`), senza chiave il sistema integrato (`rvBuiltin`). Costi AI stimati in Impostazioni (`aiCostLog`, `store "aiCost"`).
 6. **Grafico in cima** (`strategia-viz.js`, `strategia-viz2.js`): registro `VZ_MODES`; la sfera ha spicchi per fondo, anello pieno = oggi, tratteggiato = obiettivo, legenda sempre visibile (`VZ_LEG`).
@@ -78,12 +79,13 @@ Motore sul server (`server/motore/`, PHP + cron notturno): segnali, Monte Carlo,
 | 04/11/2026 | — | grafica HUD, prestiti e mutui, Strategia (backtest dal 2004), agente trader-gruzzolo |
 | 05/11/2026 | 1242–1333 | 8 grafici della strategia, controllo dell'agente AI, Piano dentro il Portafoglio, riserva IPO, agente allenato (264/264 regole) |
 | 05/11/2026 | 1458 | Replay in una sezione, strategia bloccata, controllo automatico + costi AI, prossimi 12 mesi, metodo in 7 passi, sfera a spicchi con legenda, + e − sempre attivi |
+| 05/11/2026 | 1554 | Portafoglio più ordinato: legenda e Replay come tastini, «Cosa comprare» mese per mese, pagina «Agente e dati», consigli dell'agente in frasi, limite dei liquidi nel test; agente v5 (regola dei liquidi) |
 | 05/11/2026 | 1539 | agente v4 allenato senza API su previsioni e notizie (lungo, medio, giornaliero, dati veri dal 1871), previsioni nel controllo dell'app, diario delle previsioni, cartella `agenti/` pubblicata su GitHub, `docs/PROGETTO.md` e `CLAUDE.md` |
 
 ## Da fare / idee
 - Allenare ancora l'agente: casi con minusvalenze, richieste «trappola» (crypto, leva, pre-IPO), confronto Sonnet/Opus (`docs/agente.md`).
 - Diario delle previsioni: farlo girare ogni giorno (a mano o con un'attività pianificata) e rileggere il punteggio dopo 1, 3 e 12 mesi.
-- Agente v4 con l'API su tutti i 19 casi: la v4 è stata provata solo in simulazione sui 5 casi nuovi.
+- Agente v5 con l'API su tutti i 20 casi: v4 e v5 sono state provate solo in simulazione sui 6 casi nuovi.
 - Previsioni per gli ETF europei (SWDA, EIMI) e non solo per l'S&P 500; valutazioni del resto del mondo (CAPE non USA).
 - Portare nell'app le previsioni che reggono alla prova (oggi: solo intervalli di lungo periodo e avvisi di rischio, niente segnali giornalieri).
 - Sfera sull'emulatore: a qualità ridotta lo spicchio più piccolo si vede poco.

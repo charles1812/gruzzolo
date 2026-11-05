@@ -1374,6 +1374,72 @@
      ]
     ]
    }
+  },
+  {
+   "id": "limite_liquidi",
+   "descrizione": "Fondo emergenza a zero ma l'utente ha scelto al massimo il 30% del risparmio in liquidi: non deve tenere tutto sul conto, al massimo 30% (175 €) e il resto in ETF.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Aggressivo",
+     "pesi": {
+      "SWDA": 88,
+      "EIMI": 12
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 4,
+      "valore_eur": 460,
+      "costo_eur": 440
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 100,
+     "EIMI": 0,
+     "AGGH": 0,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1630,
+     "da_mettere_da_parte": 584,
+     "tempo_libero": 300,
+     "spese": 746,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 0,
+     "obiettivo": 2085,
+     "quota_del_risparmio_pct": 0
+    },
+    "da_investire_questo_mese": 584,
+    "test_rischio": {
+     "profilo_suggerito": "Aggressivo",
+     "massimo": "Aggressivo"
+    },
+    "regole_utente": {
+     "max_liquidi_al_mese_pct": 30
+    }
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "must_buy_any": [
+     "SWDA.MI",
+     "EIMI.MI"
+    ],
+    "max_liq_pct": 30,
+    "forbid_text": [
+     "restano sul conto e non compri"
+    ],
+    "mention": [
+     [
+      "30%",
+      "30 %",
+      "limite"
+     ]
+    ]
+   }
   }
  ]
 }
