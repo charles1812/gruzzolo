@@ -354,6 +354,22 @@
 <main class="page" id="page-portafoglio">
 <section id="fzHost"></section>
 <section id="potHost"></section>
+<section class="rp-sec" id="rpSec">
+  <div class="card replay rp-card" id="replayCard">
+    <div class="rp-mini">
+      <span class="rp-ic">🔁</span>
+      <div class="rp-i"><b>Replay · <span id="rDate">—</span></b><small>tra <span class="num" id="rDays">—</span> giorni · <b class="num" id="rCost">€ —</b> · <span id="rPill"></span></small></div>
+      <button class="rp-b" id="notifyBtn" aria-label="Promemoria">🔔</button>
+      <button class="rp-b" id="editReplayBtn" aria-label="Imposta il Replay">⚙️</button>
+    </div>
+    <div class="rp-parts">
+      <div class="rp-part"><span class="rp-h">compra da solo ogni mese</span><div id="rBreakdown" class="rp-items"></div></div>
+      <div class="rp-part" id="rpPlan"></div>
+      <div class="rp-part" id="rpNext"></div>
+    </div>
+    <div hidden><span id="rIncomePct"></span><div id="notifyNote"></div></div>
+  </div>
+</section>
 <div id="planBody"></div>
 <section id="ideasHost"></section>
 <section id="scHost"></section>
@@ -366,15 +382,7 @@
   <div class="updated" id="updated"></div>
 </section>
 
-<section class="rp-sec">
-  <div class="card replay rp-mini" id="replayCard">
-    <span class="rp-ic">🔁</span>
-    <div class="rp-i"><b>Prossimo Replay · <span id="rDate">—</span></b><small>tra <span class="num" id="rDays">—</span> giorni · <b class="num" id="rCost">€ —</b></small></div>
-    <button class="rp-b" id="notifyBtn" aria-label="Promemoria">🔔</button>
-    <button class="rp-b" id="editReplayBtn" aria-label="Imposta il Replay">⚙️</button>
-    <div hidden><span id="rIncomePct"></span><span id="rPill"></span><div id="rBreakdown"></div><div id="notifyNote"></div></div>
-  </div>
-</section>
+
 
 <section hidden>
   <div class="card donut-wrap">
@@ -527,6 +535,7 @@
       <div class="hint" style="margin:2px 0 6px">Modello ed effort si scelgono nella scheda AI, in cima a Claude e OpenAI.</div>
       <button class="btn" id="sAiEditGoals" type="button" style="margin-top:8px">Cambia obiettivi / strategia</button>
       </div>
+      <div id="aiCostBox"></div>
     </div>
 
     <div class="btn-row"><button class="btn gold" id="saveSet">Salva</button></div>
@@ -1675,7 +1684,8 @@ async function aiComplete(userText, systemText, prov, model, effort){
       if(/thinking/i.test(t)){ const b2=Object.assign({},body); delete b2.thinking; res=await callA(b2); if(!res.ok) throw new Error("Anthropic "+res.status+": "+(await res.text()).slice(0,160)); }
       else throw new Error("Anthropic 400: "+t.slice(0,160));
     } else if(!res.ok){ throw new Error("Anthropic "+res.status+": "+(await res.text()).slice(0,160)); }
-    const j=await res.json(); return (j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+    const j=await res.json(); try{ if(typeof aiCostLog==="function") aiCostLog("anthropic", j.model||body.model, j.usage); }catch(e){}
+    return (j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
   } else {
     const key=settings.openaiKey; if(!key) throw new Error("Chiave OpenAI mancante");
     const mdl=model||"gpt-5.4-mini";
@@ -1687,7 +1697,8 @@ async function aiComplete(userText, systemText, prov, model, effort){
       body:JSON.stringify(body)
     });
     if(!res.ok) throw new Error("OpenAI "+res.status+": "+(await res.text()).slice(0,160));
-    const j=await res.json(); return j.choices?.[0]?.message?.content||"";
+    const j=await res.json(); try{ if(typeof aiCostLog==="function") aiCostLog("openai", mdl, j.usage); }catch(e){}
+    return j.choices?.[0]?.message?.content||"";
   }
 }
 function renderAiText(t){ return esc(t).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>"); }
@@ -2228,6 +2239,7 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ refresh
 <script src="strategia-viz2.js"></script>
 <script src="revisione.js"></script>
 <script src="ipo.js"></script>
+<script src="metodo.js"></script>
 <script src="sfide.js"></script>
 <script src="scopri.js"></script>
 <script src="updater.js"></script>

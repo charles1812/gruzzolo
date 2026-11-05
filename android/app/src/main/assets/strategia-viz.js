@@ -17,6 +17,8 @@ const VZ_MODES = {
 };
 /* cosa vuol dire quello che vedi (per i modi che non lo dicono già nella nota) */
 const VZ_MEAN = {};
+/* legenda sempre visibile sotto il grafico (per i modi che ce l'hanno): [simbolo, testo HTML] */
+const VZ_LEG = {};
 /* il portafoglio vero, per voce del modello (i titoli fuori modello contano come azioni mondo, o obbligazioni) */
 function vzActual(){ const now={}; let tn=0; (holdings||[]).forEach(h=>{ const k=Object.keys(ASSETS).find(x=>ASSETS[x].t===h.ticker); const kk=k&&ST_KEYS.includes(k)?k:(k&&ASSETS[k]&&ASSETS[k].k==="ob"?"AGGH":"SWDA"); const v=Math.max(0,valueOf(h)); now[kk]=(now[kk]||0)+v; tn+=v; }); return { now, tn }; }
 /* cosa disegna il grafico in cima: il tuo portafoglio (se hai posizioni e guardi la tua strategia) o l'anteprima */
@@ -25,7 +27,9 @@ function vzTarget(){ const A=vzActual(), mine=PL.provisional?null:PL.prof, q=(ty
   VZ.view={ kind:"preview", q, tn:A.tn }; return Object.assign({}, stW(q)); }
 function vzCapTxt(){ const v=VZ.view||{}, pn=v.q===6?"Su misura":((PROFILES[v.q]||{}).n||""); return v.kind==="mine"?`▍IL TUO PORTAFOGLIO · ${vzM0(v.tn)}`:`▍ANTEPRIMA · STRATEGIA ${pn.toUpperCase()}`; }
 function vzCapUpdate(){ const c=document.getElementById("vzCap"); if(c) c.textContent=vzCapTxt(); const n=document.getElementById("vzMean"); if(n) n.outerHTML=vzMeanHtml(); }
-function vzMeanHtml(){ const m=vzMode(), L=(VZ_MEAN[m]&&VZ_MEAN[m]())||VZ_MODES[m].note.split(" · ");
+function vzMeanHtml(){ const m=vzMode();
+  if(VZ_LEG[m]){ let R=[]; try{ R=VZ_LEG[m](); }catch(e){} return `<div class="vz-leg" id="vzMean"><div class="hud-label">come si legge</div>${R.map(([i,t])=>`<div class="vz-lr"><b>${i}</b><span>${t}</span></div>`).join("")}</div>`; }
+  const L=(VZ_MEAN[m]&&VZ_MEAN[m]())||VZ_MODES[m].note.split(" · ");
   return `<details class="vz-mean" id="vzMean"><summary>${esc(VZ_MODES[m].e+" "+VZ_MODES[m].n)} · cosa vuol dire</summary><ul>${L.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>`; }
 function vzTopHtml(){ if(!ST3.tgt || !VZ.view) ST3.tgt=vzTarget(); setTimeout(st3dKick,0);
   return `<div class="vz-top"><div class="vz-cap" id="vzCap">${esc(vzCapTxt())}</div><canvas id="st3d" class="st-3d" aria-label="Il tuo portafoglio in un grafico animato"></canvas>

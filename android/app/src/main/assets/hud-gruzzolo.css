@@ -307,3 +307,59 @@ main.page .st-in{border-radius:50% !important; background:var(--bg); border:2px 
 .ipo-c button b{font-size:12px}
 .ipo-c button small{font-size:9.5px; color:#5E7884}
 .ipo-n{font:600 9.5px ui-monospace,Consolas,monospace; color:#8C7CFF; padding:0 8px 6px; text-decoration:none; letter-spacing:1px; text-transform:uppercase}
+/* legenda della sfera, sempre visibile */
+.vz-leg{margin:4px 4px 10px; padding:8px 10px; border:1px solid #17323D; background:rgba(9,17,26,.6)}
+.vz-leg .hud-label{display:block; margin-bottom:4px}
+.vz-lr{display:flex; gap:8px; align-items:flex-start; font-size:11.5px; line-height:1.4; color:#D3E9F0; margin:5px 0}
+.vz-lr>b{flex:0 0 16px; text-align:center; color:#00E5FF; font:700 12px ui-monospace,Consolas,monospace}
+.vz-lr i{display:inline-block; width:8px; height:8px; margin:0 3px 0 2px; vertical-align:0}
+.vz-lr span b{font-weight:650}
+/* sezione Replay in pezzi */
+.rp-card{padding:0 !important}
+.rp-card .rp-mini{padding:10px 12px}
+.rp-card .pill{font-size:10px; padding:1px 6px}
+.rp-parts{padding:0 12px 10px; display:grid; gap:8px}
+.rp-part:empty{display:none}
+.rp-part{border-top:1px solid #0E222B; padding-top:8px}
+.rp-h{display:block; font:600 10px ui-monospace,Consolas,monospace; letter-spacing:1.5px; text-transform:uppercase; color:#5E7884; margin-bottom:4px}
+.rp-it{display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:baseline; padding:3px 0; font-size:13px}
+.rp-it small{color:#5E7884; font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.rp-ok{margin:0; color:#1DF2B6; font-size:12.5px}
+/* strategia bloccata */
+.st-lock{display:flex; flex-direction:column; gap:3px; padding:9px 10px; margin-top:4px; border:1px solid rgba(29,242,182,.35); background:rgba(29,242,182,.06)}
+.st-lock b{font:700 12px ui-monospace,Consolas,monospace; letter-spacing:1px; color:#1DF2B6; text-transform:uppercase}
+.st-lock span{font-size:12px; color:#D3E9F0; line-height:1.4}
+.pot-lock{font-size:11px; margin-left:4px}
+.pot-chg{display:block; margin-top:12px; font-size:12px; opacity:.85}
+.rv-auto{margin:10px 0 4px; font-size:12px; color:#D3E9F0; line-height:1.45}
+/* metodo in 7 passi */
+.mt-p{margin-top:10px}
+.mt-p > summary{cursor:pointer; list-style:none}
+.mt-p > summary::-webkit-details-marker{display:none}
+.mt-r{display:grid; grid-template-columns:26px 1fr 18px; gap:8px; padding:6px 0; border-top:1px solid #0E222B; align-items:start}
+.mt-r > b{color:#5E7884; font:600 12px ui-monospace,Consolas,monospace}
+.mt-r span{display:block; font-size:13px; color:#D3E9F0}
+.mt-r small{display:block; font-size:11.5px; color:#5E7884; line-height:1.4; margin-top:2px}
+.mt-r > i{font-style:normal; font:700 13px ui-monospace,Consolas,monospace; text-align:center}
+.mt-r.ok > i{color:#1DF2B6} .mt-r.go > i{color:#00E5FF} .mt-r.warn > i{color:#FFB020} .mt-r.todo > i, .mt-r.off > i{color:#5E7884}
+.mt-r.ok > b{color:#1DF2B6}
+/* prossimi 12 mesi */
+.fc-d{margin-top:12px; border-top:1px solid var(--line,#17323D); padding-top:8px}
+.fc-d > summary{cursor:pointer; list-style:none; font-size:13px; font-weight:620; display:flex; justify-content:space-between}
+.fc-d > summary::-webkit-details-marker{display:none}
+.fc-t{display:grid; gap:2px}
+.fc-r{display:grid; grid-template-columns:52px 1fr auto; gap:6px; align-items:baseline; padding:4px 0; border-top:1px dashed rgba(94,120,132,.25); font-size:12px}
+.fc-r > b{font:600 11px ui-monospace,Consolas,monospace; text-transform:uppercase; color:#5E7884}
+.fc-r span{display:flex; flex-wrap:wrap; gap:4px 8px}
+.fc-r em{font-style:normal}
+.fc-r small{color:#5E7884; font-size:10.5px}
+.fc-b{color:#FFB020} .fc-rp{color:#00E5FF} .fc-f{color:#7fd6d0} .fc-i{color:#c9b8ff}
+/* costi AI nelle Impostazioni */
+.ai-cost{margin-top:12px; padding:10px; border:1px solid #17323D; background:rgba(9,17,26,.5)}
+.ai-ct{font-weight:650; font-size:13px; margin-bottom:6px}
+.ai-ck{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.ai-ck div{display:flex; flex-direction:column} .ai-ck small{font-size:10px; text-transform:uppercase; letter-spacing:1px; color:#5E7884} .ai-ck b{font-size:16px; color:#00E5FF}
+.ai-cl{margin-top:6px; display:grid; gap:2px}
+.ai-cl > div{display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:baseline; font-size:12px; padding:3px 0; border-top:1px dashed rgba(94,120,132,.25)}
+.ai-cl > div > span:first-child{color:#5E7884; font-size:11px; white-space:nowrap}
+.ai-cl small{display:block; color:#5E7884; font-size:10.5px}

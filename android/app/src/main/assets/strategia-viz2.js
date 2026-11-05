@@ -171,66 +171,98 @@ function vzDayMoves(){ const m={}, val={}; (holdings||[]).forEach(h=>{ const p=(
     const k=Object.keys(ASSETS).find(x=>ASSETS[x].t===h.ticker), kk=k&&ST_KEYS.includes(k)?k:(k&&ASSETS[k]&&ASSETS[k].k==="ob"?"AGGH":"SWDA");
     m[kk]=(m[kk]||0)+h.qty*(p.eur-p.dayEur); val[kk]=(val[kk]||0)+h.qty*p.dayEur; });
   const o={}; for(const k in m) o[k]=val[k]>0?m[k]/val[k]:0; return o; }
+/* ---------- 🌐 la sfera: il portafoglio a spicchi ----------
+   Ogni fondo è uno spicchio della sfera, largo quanto pesa oggi; ogni filo vale qualche euro.
+   L'anello pieno all'equatore = come sei diviso oggi; l'anello tratteggiato fuori = l'obiettivo della strategia:
+   dove lo spicchio è più stretto del suo tratteggio, quel fondo è sotto peso e va comprato (in alto a destra).
+   Nucleo = guadagno su quello che hai versato; scintille = come va oggi ogni fondo. */
+function vzSFil(k){ VZ.sf=VZ.sf||{}; if(VZ.sf[k]) return VZ.sf[k];
+  let s=7; for(const c of k) s=(s*31+c.charCodeAt(0))%2147483646; s=s+1; const rnd=()=>{ s=(s*16807)%2147483647; return (s%10000)/10000; };
+  const L=[]; for(let i=0;i<300;i++) L.push({ u:0.08+rnd()*0.84, la:-1.3+rnd()*1.9, len:0.45+rnd()*1.0, sp:0.4+rnd()*0.9, sd:rnd()*6.28, rs:0.94+rnd()*0.08, du:(rnd()-0.5)*0.3 });
+  return VZ.sf[k]=L; }
+function vzSphereInfo(st){
+  const K=vzKeys(st), v=VZ.view||{}, mine=v.kind==="mine", tm=st.month!=null;
+  const tn = tm ? st.tot : (mine ? v.tn : 0);
+  const pw=(typeof PROFILES!=="undefined" && PL.prof && PROFILES[PL.prof]) ? PROFILES[PL.prof].w : null;
+  const T = (mine||tm) && pw ? Object.fromEntries(ST_KEYS.map(k=>[k,(pw[k]||0)/100])) : null;
+  let next=null; if(T){ let best=0.015; ST_KEYS.forEach(k=>{ const g=T[k]-K.f(k); if(g>best){ best=g; next=k; } }); }
+  let gain=null, gainE=null; if(tm){ gain=st.tot/Math.max(1,st.paid)-1; gainE=st.tot-st.paid; } else if(mine){ const S=totals(); if(S.cost>0){ gain=S.val/S.cost-1; gainE=S.val-S.cost; } }
+  return { K, mine, tm, tn, T, next, gain, gainE, per: tn>0 ? vzNice(tn/220) : null };
+}
 function vzSphere(x, W, H, t, dt, st){
-  const K=vzKeys(st), v=VZ.view||{}, mine=v.kind==="mine";
-  // quanto vale quello che disegno: nella macchina del tempo il valore del mese, altrimenti il portafoglio vero
-  const tn = st.month!=null ? st.tot : (mine ? v.tn : 0);
-  const per = tn>0 ? vzNice(tn/220) : null;
-  const size = tn>0 ? 0.55+0.45*Math.min(1, Math.log10(1+tn)/5) : 0.85;
-  const cx=W*0.56, cy=H*0.5, R=Math.min(W*0.34, H*0.38)*size;
-  // movimenti: di oggi (portafoglio vero) o del mese (macchina del tempo)
-  const mv = st.month!=null ? Object.fromEntries(ST_KEYS.map(k=>[k, HIST.r[k][st.month]||0])) : (mine ? vzDayMoves() : {});
+  const I=vzSphereInfo(st), K=I.K, tn=I.tn, per=I.per, tm=I.tm;
+  const size = tn>0 ? 0.6+0.4*Math.min(1, Math.log10(1+tn)/5) : 0.85;
+  const cx=W*0.62, cy=H*0.54, R=Math.min(W*0.3, H*0.4)*size;
+  const mv = tm ? Object.fromEntries(ST_KEYS.map(k=>[k, HIST.r[k][st.month]||0])) : (I.mine ? vzDayMoves() : {});
   const totMv=Math.abs(ST_KEYS.reduce((a,k)=>a+(mv[k]||0)*K.f(k),0));
-  VZ.spin=(VZ.spin||0)+dt*(0.08+Math.min(0.6, totMv*(st.month!=null?4:40)));
-  const yaw=(VZ.yaw||0)+VZ.spin, pit=0.35+(ST3.pitch||0), cyw=Math.cos(yaw), syw=Math.sin(yaw), cp=Math.cos(pit), sp=Math.sin(pit), F=R*3.2;
-  const P=(X,Y,Z)=>{ const x1=X*cyw+Z*syw, z1=-X*syw+Z*cyw, y1=Y*cp-z1*sp, z2=Y*sp+z1*cp, k=F/(F-z2*R); return [cx+x1*R*k, cy-y1*R*k, z2]; };
-  const hg=x.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.35); hg.addColorStop(0,"rgba(140,124,255,.16)"); hg.addColorStop(0.6,"rgba(0,229,255,.05)"); hg.addColorStop(1,"rgba(0,229,255,0)"); x.fillStyle=hg; x.beginPath(); x.arc(cx,cy,R*1.35,0,Math.PI*2); x.fill();
-  x.save(); x.globalCompositeOperation="lighter"; x.lineWidth=0.7;
-  const q=VZ.q||1, SG=q<0.6?8:14; let drawn=0;
-  K.keys.forEach(k=>{
-    // filamenti: uno ogni «per» euro (senza soldi: uno ogni mezzo punto di peso)
-    const nTrue = per ? Math.round(K.f(k)*tn/per) : Math.round(K.f(k)*200), n=Math.min(300, Math.round(nTrue*q)), Fl=vzFil(k), col=ST_COL[k], vol=ST_VOL[k]||.1, jit=(0.02+vol*0.9)*(1+2.5*st.storm);
-    drawn+=n;
-    for(let i=0;i<n;i++){ const f=Fl[i]; x.strokeStyle=col; x.beginPath(); let za=0;
-      for(let s2=0;s2<=SG;s2++){ const a=f.a0+f.len*s2/SG+t*0.05*f.sp, rr=f.rs*(1+jit*Math.sin(a*5+f.sd+t*f.sp*(1+vol*20)));
-        const ca=Math.cos(a), sa=Math.sin(a), X=(ca*f.u[0]+sa*f.w[0])*rr, Y=(ca*f.u[1]+sa*f.w[1])*rr, Z=(ca*f.u[2]+sa*f.w[2])*rr, p=P(X,Y,Z); za+=p[2];
-        s2?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]); }
-      x.globalAlpha=0.10+0.22*(za/(SG+1)+1)/2; x.stroke(); }
-    // scintille: verso fuori se sale, verso il nucleo se scende; quante e quanto lunghe = quanto si muove
-    const r=mv[k]; if(r!=null && Math.abs(r)>0.0005){ const up=r>0, mag=Math.min(1, Math.abs(r)/(st.month!=null?0.06:0.015)), ns=Math.max(2, Math.round(Math.min(n,60)*mag*0.6));
-      x.globalAlpha=0.75; x.strokeStyle=up?col:"#FF3B5C"; x.fillStyle=up?col:"#FF3B5C";
-      for(let i=0;i<ns;i++){ const f=Fl[i], a=f.a0+t*0.05*f.sp, ca=Math.cos(a), sa=Math.sin(a), D=[ca*f.u[0]+sa*f.w[0], ca*f.u[1]+sa*f.w[1], ca*f.u[2]+sa*f.w[2]];
-        const ph=(t*0.7+f.sd)%1, L1=up?1+ph*0.9*mag+0.05:1-ph*0.75*mag, L0=up?1:L1+0.12, p1=P(D[0]*L0,D[1]*L0,D[2]*L0), p2=P(D[0]*L1,D[1]*L1,D[2]*L1);
-        x.beginPath(); x.moveTo(p1[0],p1[1]); x.lineTo(p2[0],p2[1]); x.stroke(); x.beginPath(); x.arc(p2[0],p2[1],1.2,0,Math.PI*2); x.fill(); } } });
+  VZ.spin=(VZ.spin||0)+dt*(0.06+Math.min(0.45, totMv*(tm?3:30)));
+  const yaw=(VZ.yaw||0)+VZ.spin, pit=0.32+(ST3.pitch||0), cyw=Math.cos(yaw), syw=Math.sin(yaw), cp=Math.cos(pit), sp=Math.sin(pit), Fd=R*3.4;
+  const P=(X,Y,Z)=>{ const x1=X*cyw+Z*syw, z1=-X*syw+Z*cyw, y1=Y*cp-z1*sp, z2=Y*sp+z1*cp, k=Fd/(Fd-z2*R); return [cx+x1*R*k, cy-y1*R*k, z2]; };
+  const S3=(lon,lat,r)=>P(r*Math.cos(lat)*Math.cos(lon), r*Math.sin(lat), r*Math.cos(lat)*Math.sin(lon));
+  // spicchi: longitudine di partenza e fine di ogni fondo (pesi di oggi)
+  const sec={}; let a0=0; K.keys.forEach(k=>{ const w=K.f(k)*Math.PI*2; sec[k]=[a0,a0+w]; a0+=w; });
+  const hg=x.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.4); hg.addColorStop(0,"rgba(140,124,255,.14)"); hg.addColorStop(0.6,"rgba(0,229,255,.05)"); hg.addColorStop(1,"rgba(0,229,255,0)"); x.fillStyle=hg; x.beginPath(); x.arc(cx,cy,R*1.4,0,Math.PI*2); x.fill();
+  const q=VZ.q||1, SG=q<0.6?6:10, foc=VZ.focus;
+  x.save(); x.globalCompositeOperation="lighter"; x.lineWidth=0.8;
+  K.keys.forEach(k=>{ const [L0,L1]=sec[k], Fl=vzSFil(k), col=ST_COL[k], vol=ST_VOL[k]||.1, jit=(0.015+vol*0.6)*(1+2.5*st.storm), dim=foc&&foc!==k?0.25:1;
+    const nTrue = per ? Math.round(K.f(k)*tn/per) : Math.round(K.f(k)*200), n=Math.max(1,Math.min(300, Math.round(nTrue*q)));
+    for(let i=0;i<n;i++){ const f=Fl[i], lon=L0+(L1-L0)*f.u, la0=f.la+Math.sin(t*0.3*f.sp+f.sd)*0.12; let za=0; x.strokeStyle=col; x.beginPath();
+      for(let s2=0;s2<=SG;s2++){ const lat=Math.max(-1.45,Math.min(1.45,la0+f.len*s2/SG)), lo=lon+(L1-L0)*f.du*0.15*Math.sin(s2/SG*3+f.sd), rr=f.rs*(1+jit*Math.sin(lat*6+f.sd+t*f.sp*(1+vol*18))), p=S3(lo,lat,rr); za+=p[2]; s2?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]); }
+      x.globalAlpha=(0.12+0.4*Math.max(0,(za/(SG+1)+1)/2))*dim; x.stroke(); }
+    // scintille: fuori se oggi sale, verso il nucleo (rosse) se scende
+    const r=mv[k]; if(r!=null && Math.abs(r)>0.0005){ const up=r>0, mag=Math.min(1, Math.abs(r)/(tm?0.06:0.015)), ns=Math.max(2, Math.round(Math.min(n,50)*mag*0.6));
+      x.globalAlpha=0.8*dim; x.strokeStyle=up?col:"#FF3B5C"; x.fillStyle=up?col:"#FF3B5C";
+      for(let i=0;i<ns;i++){ const f=Fl[i], lon=L0+(L1-L0)*f.u, lat=Math.max(-1.3,Math.min(1.3,f.la+f.len/2)), ph=(t*0.7+f.sd)%1, l1=up?1+ph*0.8*mag+0.05:1-ph*0.7*mag, l0=up?1:l1+0.12, p1=S3(lon,lat,l0), p2=S3(lon,lat,l1);
+        x.beginPath(); x.moveTo(p1[0],p1[1]); x.lineTo(p2[0],p2[1]); x.stroke(); x.beginPath(); x.arc(p2[0],p2[1],1.3,0,Math.PI*2); x.fill(); } } });
   x.globalAlpha=1;
-  // nucleo: il guadagno (verde) o la perdita (rossa) rispetto a quello che hai versato
-  let gain=null; if(st.month!=null) gain=st.tot/Math.max(1,st.paid)-1; else if(mine){ const T=totals(); gain=T.cost>0?T.val/T.cost-1:null; }
-  const gc=gain==null?"0,229,255":gain>=0?"29,242,182":"255,59,92", gr=R*(0.14+Math.min(0.18, Math.abs(gain||0)*0.6));
+  // nucleo: guadagno (verde) o perdita (rossa) su quello che hai versato
+  const gain=I.gain, gc=gain==null?"0,229,255":gain>=0?"29,242,182":"255,59,92", gr=R*(0.15+Math.min(0.18, Math.abs(gain||0)*0.6));
   const ng=x.createRadialGradient(cx,cy,1,cx,cy,gr); ng.addColorStop(0,"rgba(255,255,255,.9)"); ng.addColorStop(0.3,`rgba(${gc},.55)`); ng.addColorStop(1,`rgba(${gc},0)`); x.fillStyle=ng; x.beginPath(); x.arc(cx,cy,gr,0,Math.PI*2); x.fill();
   x.restore();
-  // mirino e tacche
-  x.strokeStyle="rgba(0,229,255,.5)"; x.lineWidth=1; x.beginPath(); x.arc(cx,cy,R*1.12,t*0.3,t*0.3+1.1); x.stroke(); x.beginPath(); x.arc(cx,cy,R*1.12,t*0.3+Math.PI,t*0.3+Math.PI+1.1); x.stroke();
-  // legenda in alto a sinistra: fondo, peso, euro, movimento
-  x.textAlign="left"; let ly=st.month!=null?112:16;
-  K.keys.slice().sort((a,b)=>K.f(b)-K.f(a)).forEach(k=>{ const r=mv[k]; x.fillStyle=ST_COL[k]; x.fillRect(8,ly-8,2,10); x.font=VZ_FONT(10,700);
-    x.fillText(`${shortName(ASSETS[k].t)} ${Math.round(K.f(k)*100)}%`, 14, ly);
-    if(r!=null){ const tw=x.measureText(`${shortName(ASSETS[k].t)} ${Math.round(K.f(k)*100)}% `).width; x.fillStyle=r>=0?"#1DF2B6":"#FF3B5C"; x.font=VZ_FONT(9,700); x.fillText(`${r>=0?"▲":"▼"}${nf2.format(Math.abs(r*100))}%`, 14+tw, ly); }
-    x.fillStyle="#5E7884"; x.font=VZ_FONT(8); x.fillText((tn>0?vzM0(K.f(k)*tn)+" · ":"")+ST_LAB[k].toUpperCase(), 14, ly+10); ly+=24; });
-  // in basso: quanto vale un filamento e il guadagno del nucleo
-  x.font=VZ_FONT(8.5,700); x.fillStyle="#D3E9F0"; x.fillText(per?`1 FILAMENTO = ${per<1?nf2.format(per):Math.round(per)} €`:"1 FILAMENTO = ½ PUNTO DI PESO", 8, H-24);
-  if(gain!=null){ x.fillStyle=gain>=0?"#1DF2B6":"#FF3B5C"; x.fillText(`● NUCLEO ${gain>=0?"+":"−"}${nf2.format(Math.abs(gain*100))}% SU VERSATI`, 8, H-12); }
-  else { x.fillStyle="#5E7884"; x.fillText("● NUCLEO: ANTEPRIMA SENZA SOLDI", 8, H-12); }
+  // confini degli spicchi (meridiani)
+  x.lineWidth=0.8; K.keys.forEach(k=>{ const lon=sec[k][0]; x.beginPath(); for(let s2=0;s2<=16;s2++){ const p=S3(lon,-1.5+3*s2/16,1.02); x.strokeStyle=`rgba(211,233,240,${p[2]>0?0.55:0.08})`; s2?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]); } x.stroke(); });
+  // anelli all'equatore: pieno = oggi, tratteggiato = obiettivo della strategia
+  const ring=(fr, r, dash, lw)=>{ let b=0; x.setLineDash(dash); x.lineWidth=lw; ST_KEYS.forEach(k=>{ const w=(fr[k]||0)*Math.PI*2; if(w<0.01){ return; } const n=Math.max(3,Math.ceil(w/0.12));
+      for(let i=0;i<n;i++){ const pa=S3(b+w*i/n,0,r), pb=S3(b+w*(i+1)/n,0,r); x.strokeStyle=ST_COL[k]; x.globalAlpha=(pa[2]+pb[2])/2>0?0.95:0.3; x.beginPath(); x.moveTo(pa[0],pa[1]); x.lineTo(pb[0],pb[1]); x.stroke(); } b+=w; }); x.setLineDash([]); x.globalAlpha=1; };
+  ring(Object.fromEntries(K.keys.map(k=>[k,K.f(k)])), 1.08, [], 3);
+  if(I.T) ring(I.T, 1.2, [5,4], 1.6);
+  // etichette a sinistra, con una linea verso il loro spicchio
+  x.textAlign="left"; let ly=tm?104:18;
+  K.keys.forEach(k=>{ const r=mv[k], [L0,L1]=sec[k], c=S3((L0+L1)/2, 0.45, 1.0), col=ST_COL[k];
+    const name=`${shortName(ASSETS[k].t)} ${Math.round(K.f(k)*100)}%`;
+    x.font=VZ_FONT(11,800); x.fillStyle=col; x.fillText(name, 8, ly); let tw=x.measureText(name+" ").width;
+    if(tn>0){ x.font=VZ_FONT(10,600); x.fillStyle="#D3E9F0"; x.fillText(vzM0(K.f(k)*tn), 8+tw, ly); }
+    x.font=VZ_FONT(8.5); x.fillStyle="#5E7884";
+    const sub=(I.T?`OBIETTIVO ${Math.round(I.T[k]*100)}%`:ST_LAB[k].toUpperCase())+(r!=null?" · ":"");
+    x.fillText(sub, 8, ly+12); if(r!=null){ const sw=x.measureText(sub).width; x.fillStyle=r>=0?"#1DF2B6":"#FF3B5C"; x.font=VZ_FONT(8.5,700); x.fillText(`${tm?"MESE":"OGGI"} ${r>=0?"▲":"▼"}${nf2.format(Math.abs(r*100))}%`, 8+sw, ly+12); }
+    // linea: dal bordo dell'etichetta al centro dello spicchio (tenue se è dietro)
+    x.strokeStyle=col; x.globalAlpha=c[2]>0?0.7:0.18; x.lineWidth=0.8; x.setLineDash([2,3]); x.beginPath(); x.moveTo(Math.min(cx-R*1.3, 8+Math.max(tw+40,96)), ly-4); x.lineTo(c[0],c[1]); x.stroke(); x.setLineDash([]); x.globalAlpha=1;
+    x.beginPath(); x.arc(c[0],c[1],2.2,0,Math.PI*2); x.fillStyle=col; x.fill();
+    ly+=32; });
+  // in alto a destra: cosa comprare (lo spicchio più sotto il suo obiettivo)
+  x.textAlign="right";
+  if(I.next && !tm){ x.font=VZ_FONT(8.5,700); x.fillStyle="#5E7884"; x.fillText("PROSSIMO ACQUISTO", W-8, 16); x.font=VZ_FONT(12,800); x.fillStyle=Math.sin(t*3)>-0.6?"#FFB020":"#8a6418"; x.fillText(`▲ ${shortName(ASSETS[I.next].t)}`, W-8, 31);
+    x.font=VZ_FONT(8.5); x.fillStyle="#5E7884"; x.fillText(`sotto di ${Math.round((I.T[I.next]-K.f(I.next))*100)} punti`, W-8, 43); }
+  else if(I.T && !tm){ x.font=VZ_FONT(9,700); x.fillStyle="#1DF2B6"; x.fillText("✓ IN EQUILIBRIO", W-8, 16); }
+  // in basso: il nucleo e quanto vale un filo
+  x.textAlign="left"; x.font=VZ_FONT(9,700);
+  if(gain!=null){ x.fillStyle=gain>=0?"#1DF2B6":"#FF3B5C"; x.fillText(`● NUCLEO = GUADAGNO ${I.gainE>=0?"+":"−"}${vzM0(Math.abs(I.gainE))} (${gain>=0?"+":"−"}${nf2.format(Math.abs(gain*100))}%)`, 8, H-24); }
+  else { x.fillStyle="#5E7884"; x.fillText("● ANTEPRIMA: COME SAREBBE DIVISO", 8, H-24); }
+  x.fillStyle="#D3E9F0"; x.font=VZ_FONT(8.5,600); x.fillText(per?`1 FILO = ${per<1?nf2.format(per):Math.round(per)} € · ${I.T?"━ OGGI  ┅ OBIETTIVO":"SPICCHIO = PESO"}`:"SPICCHIO = PESO DELLA STRATEGIA", 8, H-11);
 }
-VZ_MEAN.sfera=()=>{ const v=VZ.view||{}, tn=v.kind==="mine"?v.tn:0, per=tn>0?vzNice(tn/220):null;
-  return [ "La sfera è il tuo patrimonio investito: più vale, più si allarga.",
-    per?`Ogni filamento vale ${per<1?nf2.format(per):Math.round(per)} €; il colore è il fondo. Più soldi in un fondo, più filamenti.`:"Senza soldi investiti ogni filamento è mezzo punto di peso della strategia.",
-    "I filamenti vibrano e si staccano quanto oscilla quel fondo: le azioni emergenti più di tutti, la liquidità quasi ferme.",
-    "Scintille verso fuori: oggi quel fondo sale. Rosse verso il centro: scende. Più sono lunghe, più si muove.",
-    "Il nucleo è il guadagno: verde se sei sopra quello che hai versato, rosso se sei sotto, più grande più è forte.",
-    "Gira più veloce nei giorni in cui il portafoglio si muove di più. Con ▶ la rivedi mese per mese dal 2004." ]; };
+/* la legenda sotto la sfera: sempre visibile, con i numeri veri */
+VZ_LEG.sfera=()=>{ const v=VZ.view||{}, I=vzSphereInfo({ w:ST3.tgt||{}, month:null, storm:0 }), per=I.per;
+  const P=[], c=(k)=>`<i style="background:${ST_COL[k]}"></i>`;
+  P.push(["◐", `<b>Spicchi = i tuoi fondi.</b> Ogni colore è un ETF, largo quanto pesa: ${I.K.keys.map(k=>`${c(k)}${shortName(ASSETS[k].t)} ${Math.round(I.K.f(k)*100)}%`).join(" · ")}.`]);
+  if(per) P.push(["〰", `<b>Ogni filo vale ${per<1?nf2.format(per):Math.round(per)} €.</b> Più fili = più soldi in quel fondo. Più tremano, più quel fondo oscilla.`]);
+  if(I.T) P.push(["◎", `<b>Anello pieno = oggi, tratteggiato = obiettivo</b> della strategia. ${I.next?`Lo spicchio <b style="color:${ST_COL[I.next]}">${shortName(ASSETS[I.next].t)}</b> è più corto del suo tratteggio: è il prossimo da comprare.`:"Coincidono: sei in equilibrio."}`]);
+  P.push(["✦", `<b>Scintille = come va oggi.</b> Verso fuori se quel fondo sale, rosse verso il centro se scende.`]);
+  if(I.gain!=null) P.push(["●", `<b>Nucleo = guadagno</b> su quello che hai versato: ${I.gainE>=0?"+":"−"}${vzM0(Math.abs(I.gainE))}. Verde se sei sopra, rosso se sei sotto.`]);
+  P.push(["↻", `Trascina per girarla. ▶ la rivede mese per mese dal 2004 con la strategia.`]);
+  return P; };
 
 Object.assign(VZ_MODES, {
-  sfera:{ e:"🌐", n:"La sfera", note:"il tuo patrimonio · filamenti = euro per fondo · scintille = come va oggi · nucleo = guadagno", tm:true, draw:vzSphere },
+  sfera:{ e:"🌐", n:"La sfera", note:"spicchio = un fondo · filo = euro · anello tratteggiato = obiettivo · nucleo = guadagno", tm:true, draw:vzSphere },
   stelle:{ e:"✨", n:"La costellazione", note:"una stella = un punto di peso · brillano quanto oscillano · trascina per girare il cielo", tm:true, draw:vzSky },
   bolle:{ e:"🫧", n:"Le bolle", note:"bolla = un fondo con il suo logo · grande quanto il peso · spingile col dito", tm:true, draw:vzBubbles },
   citta:{ e:"🏙️", n:"La città", note:"quartiere = un fondo · alto quanto il peso · finestre che tremolano = quanto oscilla", tm:true, draw:vzCity },

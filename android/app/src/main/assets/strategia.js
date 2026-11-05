@@ -186,8 +186,7 @@ function stLiveHtml(M, G, HZ, v0, inf){
     ${R("06","Orizzonte",`Questa strategia ha senso se non ti servono i soldi per almeno ${hz} anni.`)}</div>`;
   // 6. azioni
   const isMine=q===mine && (q!==6 || JSON.stringify(PL.cw||{})===JSON.stringify(STG.cw));
-  h+=`<div class="st-act">${isMine?`<span class="hud-pill" style="--c:var(--teal)">✓ è la tua strategia</span>`:`<button class="hud-btn st-apply" data-st="apply" style="--c:var(--amber)">applica ${q===6?"su misura":esc(PROFILES[q].n.toLowerCase())}</button>`}
-    <button class="hud-btn" data-pn="replay" data-v="${q}">adatta il replay a ${m0(M)}</button>
+  h+=`<div class="st-act">${isMine?`<span class="hud-pill" style="--c:var(--teal)">✓ è la tua strategia</span>`:`<button class="hud-btn st-apply" data-st="apply" style="--c:var(--amber)">conferma ${q===6?"su misura":esc(PROFILES[q].n.toLowerCase())}</button>`}
     <button class="add pn-test" data-p="redo">${(typeof riskScore==="function"&&riskScore(PL.ans))?"Rifai il test del rischio →":"Non sai quale? Fai il test del rischio (2 minuti) →"}</button></div>`;
   return h;
 }
@@ -223,8 +222,9 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-st]"); if
   if(a==="q"){ STG.q=+b.dataset.v; if(STG.q<6) PL.pick=STG.q; else stSetCustom(STG.cw); renderPiano(); window.scrollTo(0,y); return; }
   if(a==="from"){ STG.from=b.dataset.v; stRefresh(); return; }
   if(a==="apply"){ const q=STG.q, n=q===6?"Su misura":PROFILES[q].n;
+    if(!confirm(`Confermi la strategia ${n}?\n\nDa adesso il serbatoio, gli acquisti, il Replay e l'agente seguono questi pesi e la strategia resta bloccata. Per cambiarla: serbatoio del mese → ⚙️ Cambia strategia.`)) return;
     if(q===6){ const s=ST_KEYS.reduce((t,k)=>t+(STG.cw[k]||0),0); if(s!==100){ toast("I pesi devono fare 100%"); return; } if(!((STG.cw.SWDA||0)+(STG.cw.EIMI||0)+(STG.cw.AGGH||0)>0)){ toast("Metti almeno un ETF"); return; } PL.cw=Object.assign({}, STG.cw); stSetCustom(PL.cw); }
-    PL.prof=q; PL.provisional=false; PL.pick=q<6?q:PL.pick; plSave();
+    PL.prof=q; PL.provisional=false; PL.pick=q<6?q:PL.pick; PL.locked=true; PL.lockedAt=ymd(today0()); plSave();
     if(typeof INV!=="undefined") INV=null;
     renderPiano(); window.scrollTo(0,y); if(typeof mountPot==="function") mountPot(); if(typeof renderBudget==="function") renderBudget();
     toast(`Strategia ${n}: il serbatoio e gli acquisti seguono questi pesi`); }

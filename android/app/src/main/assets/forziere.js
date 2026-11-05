@@ -395,7 +395,7 @@ function potHtml(){
       <span class="pot-t"><b>${dn?"Serbatoio del mese pieno":first&&!ch&&S>0?"Questo mese: investi o tieni sul conto?":`Da fare questo mese: ${m0(todo)}`}</b>
         <small>🛟 ${m0(Math.max(0,fund-fDone))} sul conto · 📈 ${m0(Math.max(0,invT-invD))} in ETF${ipo>0?` · 🚀 ${m0(ipo-iDone)} IPO`:""}${filled>=1?` · ✓ ${m0(filled)} già fatti`:""} · ${esc(PL.prof===6?"Su misura":PROFILES[PL.prof].n)}</small></span>
       <span class="pot-p"><i style="width:${tot>0?Math.round(filled/tot*100):0}%"></i></span><span class="pot-c">▾</span></summary>
-    <div class="card inv-card"><div class="t4-h"><small>Serbatoio del mese · strategia ${esc(PL.prof===6?"Su misura":PROFILES[PL.prof].n)}${PL.provisional?" (provvisoria)":""} <button class="add" data-b="goto" data-v="piano" style="font-size:11px">cambia ▸</button></small>
+    <div class="card inv-card"><div class="t4-h"><small>Serbatoio del mese · strategia ${esc(PL.prof===6?"Su misura":PROFILES[PL.prof].n)}${PL.provisional?" (provvisoria)":""} ${PL.locked?`<span class="pot-lock">🔒</span>`:`<button class="add" data-b="goto" data-v="piano" style="font-size:11px">scegli ▸</button>`}</small>
       <b class="num">${m0(filled)} <small style="font-size:.5em">di ${m0(tot)}</small></b>
       <span>da mettere da parte questo mese: 🛟 ${m0(fund)} sul conto + 📈 ${m0(invT)} da investire${m.pot>=1?` (con ${m0(m.pot)} dei mesi scorsi)`:""}</span></div>
     ${tot>0?`<div class="t4-tank inv-tank">${col("🛟","Sul conto",fDone,fund,"#7fd6d0","#2f8f8a")}${invT>0?col("📈","Investimenti",invD,invT,"#f2cf82","#b8862f"):""}${ipo>0?col("🚀","Riserva IPO",iDone,ipo,"#c9b8ff","#6f5ad0"):""}</div>`:""}
@@ -414,12 +414,14 @@ function potHtml(){
     else h+=`<div id="invInline">${invListHtml(true)}</div>`;
   } else if(S>0) h+=`<p class="bnote" style="margin:10px 0 0">${m.done>0?"Questo mese hai già investito la parte prevista.":"Questo mese tutto va sul conto: il fondo emergenza viene prima degli investimenti."}</p>`;
   if(!(first && !ch)) h+=`<p class="bnote" style="margin:8px 0 0">${esc(p.why)}</p>`;
+  if(typeof fcHtml==="function") h+=fcHtml();
+  if(PL.locked) h+=`<button class="add pot-chg" data-lock="open">⚙️ Cambia strategia</button>`;
   h+=`</div></details>`;
   return h+fine;     // il serbatoio sostituisce la barra «Investimento del mese»
 }
 /* la proposta resta la stessa finché non cambia quanto c'è da investire (così − e + non si perdono) */
 function invEnsure(amt){
-  const k=(typeof cycleOf==="function"?cycleOf().key:"")+"|"+r2(amt)+"|"+holdings.map(h=>h.ticker+h.qty).join(",");
+  const k=(typeof cycleOf==="function"?cycleOf().key:"")+"|"+r2(amt)+"|"+holdings.map(h=>h.ticker+h.qty).join(",")+"|"+PL.prof+JSON.stringify(PL.prof===6?PL.cw||{}:{})+"|"+(replay&&replay.enabled?(replay.items||[]).map(i=>i.ticker+i.quote).join(","):"");
   if(INV && INV.key===k) return INV;
   const L=invCands(); invPropose(L, amt); INV={ L, pot:amt, key:k }; return INV;
 }
@@ -429,11 +431,12 @@ function invListHtml(inline){
   return `<div class="eyebrow" style="margin:12px 0 2px">Il portafoglio che ti propongo: compra</div>
     ${INV.L.map((x,i)=>`<div class="inv-r"><div class="inv-n"><b>${x.n} × ${esc(shortName(x.t))}</b><small>${esc(x.name)}${x.goal>0?` · obiettivo ${Math.round(x.goal*100)}%`:""}</small>
         <label class="inv-px"><span>a</span><input inputmode="decimal" data-invpx="${i}" value="${String(r2(x.px)).replace(".",",")}" aria-label="Prezzo di ${esc(shortName(x.t))}"><span>€ · ${money(x.n*x.px)}</span></label></div>
-      <div class="inv-s"><button data-inv="-" data-i="${i}" ${x.n?"":"disabled"} aria-label="Una quota in meno">−</button><b class="num">${x.n}</b><button data-inv="+" data-i="${i}" ${x.px<=left+0.001?"":"disabled"} aria-label="Una quota in più">+</button></div></div>`).join("")}
+      <div class="inv-s"><button data-inv="-" data-i="${i}" ${x.n?"":"disabled"} aria-label="Una quota in meno">−</button><b class="num">${x.n}</b><button data-inv="+" data-i="${i}" aria-label="Una quota in più">+</button></div></div>`).join("")}
     <div class="bp-row" style="margin-top:8px"><span>Spendi</span><b class="num">${money(spent)}</b></div>
-    <div class="bp-row"><span>Restano da investire</span><b class="num ${left<0?"neg":""}">${money(left)}</b></div>
+    <div class="bp-row"><span>${left<-0.005?"Spendi in più":"Restano da investire"}</span><b class="num ${left<0?"neg":""}">${money(Math.abs(left))}</b></div>
+    ${left<-0.005?`<p class="bnote warn" style="margin:4px 0 0">Superi di ${money(-left)} quello che c'è da investire questo mese: li prendi dal conto. Se non vuoi, togli una quota con −.</p>`:""}
     <p class="bnote">Compra queste quote dalla tua app (Fineco); se il prezzo pagato è diverso correggilo. Poi conferma: le aggiungo al portafoglio.</p>
-    <div class="btn-row"><button class="btn gold" data-inv="ok" ${spent>0&&left>=-0.01?"":"disabled"}>✅ Ho comprato: aggiungi al portafoglio</button></div>
+    <div class="btn-row"><button class="btn gold" data-inv="ok" ${spent>0?"":"disabled"}>✅ Ho comprato: aggiungi al portafoglio</button></div>
     ${inline?`<button class="btn ghost" ${(()=>{ try{ return bStatus().P.partial; }catch(e){ return false; } })()?`data-b="fminv" data-v="keep"`:`data-inv="skip"`} style="margin-top:8px">Non questo mese</button>`:`<button class="btn ghost" data-inv="close" style="margin-top:10px">Non ora</button>`}`;
 }
 let POT_OPEN=false;
@@ -451,9 +454,11 @@ function invCands(){
   return L;
 }
 function invPropose(L, money0){
-  const cur={}; holdings.forEach(h=>cur[h.ticker]=(cur[h.ticker]||0)+valueOf(h)); let left=money0, tot=Object.values(cur).reduce((a,b)=>a+b,0);
+  const cur={}; holdings.forEach(h=>cur[h.ticker]=(cur[h.ticker]||0)+valueOf(h));
+  try{ if(replay && replay.enabled && typeof replayPending==="function" && replayPending(bStatus())) (replay.items||[]).forEach(i=>{ const px=pxOf(i.ticker); if(px>0) cur[i.ticker]=(cur[i.ticker]||0)+px*(+i.quote||0); }); }catch(e){}
+  let left=money0, tot=Object.values(cur).reduce((a,b)=>a+b,0);
   L.forEach(x=>x.n=0);
-  for(let k=0;k<300;k++){ const ok=L.filter(x=>x.px<=left+0.001 && x.goal>0); if(!ok.length) break;
+  for(let k=0;k<300;k++){ const ok=L.filter(x=>x.px<=left+0.001 && x.goal>0 && x.goal*(tot+x.px)-(cur[x.t]||0)>-x.px/2); if(!ok.length) break;   // non compro quello che finirebbe troppo sopra il peso: il resto aspetta il mese dopo
     ok.sort((a,b)=>(b.goal*(tot+b.px)-(cur[b.t]||0))-(a.goal*(tot+a.px)-(cur[a.t]||0)));
     const x=ok[0]; x.n++; left-=x.px; cur[x.t]=(cur[x.t]||0)+x.px; tot+=x.px; }
 }

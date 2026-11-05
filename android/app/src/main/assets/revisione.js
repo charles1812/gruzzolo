@@ -121,8 +121,7 @@ function rvHtml(){
     h+=`<div class="hud-label" style="margin:10px 0 4px">controllo integrato</div>${R.findings.map(f=>`<div class="st-rule"><b style="color:${icon[f.l][1]}">${icon[f.l][0]}</b><div><span>${esc(f.t)}</span><small>${esc(f.d)}</small></div></div>`).join("")}`;
     if(R.rischi&&R.rischi.length) h+=`<div class="hud-label" style="margin:8px 0 4px">rischi</div>${R.rischi.map(x=>`<div class="rv-r">⚠ ${esc(x)}</div>`).join("")}`;
   }
-  h+=`<div class="st-act"><button class="hud-btn" data-rv="run" style="--c:var(--violet)" ${RV_BUSY?"disabled":""}>${RV_BUSY?"controllo in corso…":hasK?"fai controllare all'agente AI":"controlla adesso"}</button>
-    ${hasK?"":`<button class="add" data-rv="key">Con la chiave Anthropic lo fa l'agente AI: mettila nelle Impostazioni →</button>`}</div>
+  h+=`<p class="rv-auto">${RV_BUSY?"Controllo in corso…":hasK?`🤖 Automatico: l'agente AI lo rifà da solo quando è ora e ogni volta che confermi una strategia.${R&&R.cost!=null&&typeof aiEur==="function"?` Ultimo controllo: <b class="num">${aiEur(R.cost)}</b> (i costi sono in Impostazioni).`:""}`:`⚙️ Automatico: il sistema integrato ricontrolla da solo. Con la chiave Anthropic nelle Impostazioni lo fa l'agente AI.`}</p>
     <p class="pn-note">Le vendite e gli acquisti li fai tu dalla tua banca. Non è consulenza: l'agente propone, tu decidi.</p></div></section>`;
   return h;
 }
