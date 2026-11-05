@@ -80,6 +80,7 @@ Motore sul server (`server/motore/`, PHP + cron notturno): segnali, Monte Carlo,
 | 04/11/2026 | — | grafica HUD, prestiti e mutui, Strategia (backtest dal 2004), agente trader-gruzzolo |
 | 05/11/2026 | 1242–1333 | 8 grafici della strategia, controllo dell'agente AI, Piano dentro il Portafoglio, riserva IPO, agente allenato (264/264 regole) |
 | 05/11/2026 | 1458 | Replay in una sezione, strategia bloccata, controllo automatico + costi AI, prossimi 12 mesi, metodo in 7 passi, sfera a spicchi con legenda, + e − sempre attivi |
+| 06/11/2026 | agente v6 | agente: commissioni vere ed ETF equivalenti senza commissioni (XMME/EMKT al posto di EIMI), portafoglio che parte da zero, posizioni con ticker diversi contate nella loro voce (XMME = emergenti, oro fuori strategia); casi «zero_promo» ed «emergenti_sopra», controlli `with_fees` e `min_buy_eur` nell'esame (simulazione 109/109) |
 | 05/11/2026 | 1622 | icone dei grafici anche con le monete; oggi/settimana su due colonne; andamento = guadagno del portafoglio dalla data di acquisto (o da quando hai aggiunto il titolo); tasto «Chiudi» nel serbatoio; strategia e consigli dell'agente in un solo riquadro; via la riserva IPO, sezione «IPO future» sotto la Follia |
 | 05/11/2026 | 1607 | consigli dell'agente dentro il Portafoglio (sotto «Cosa comprare»); previsioni, backtest e dettagli del controllo in Dati › Agente |
 | 05/11/2026 | 1554–1558 | Portafoglio più ordinato: legenda e Replay come tastini, «Cosa comprare» mese per mese, pagina «Agente e dati», consigli dell'agente in frasi, limite dei liquidi nel test (rifare il test non cambia la strategia bloccata); agente v5 (regola dei liquidi) |
@@ -88,7 +89,8 @@ Motore sul server (`server/motore/`, PHP + cron notturno): segnali, Monte Carlo,
 ## Da fare / idee
 - Allenare ancora l'agente: casi con minusvalenze, richieste «trappola» (crypto, leva, pre-IPO), confronto Sonnet/Opus (`docs/agente.md`).
 - Diario delle previsioni: farlo girare ogni giorno (a mano o con un'attività pianificata) e rileggere il punteggio dopo 1, 3 e 12 mesi.
-- Agente v5 con l'API su tutti i 20 casi: v4 e v5 sono state provate solo in simulazione sui 6 casi nuovi.
+- Agente v6 con l'API su tutti i 22 casi: v4, v5 e v6 sono state provate solo in simulazione sui casi nuovi.
+- **App: i ticker che non conosce (XMME, EMKT, SGLN…) li conta come SWDA** (`strategia.js` riga ~136): XMME va contato negli emergenti, l'oro come voce a parte. Serve anche passare all'agente le commissioni e gli ETF senza commissioni del mese (`commissioni`, equivalenti in `etf_disponibili`).
 - Previsioni per gli ETF europei (SWDA, EIMI) e non solo per l'S&P 500; valutazioni del resto del mondo (CAPE non USA).
 - Portare nell'app le previsioni che reggono alla prova (oggi: solo intervalli di lungo periodo e avvisi di rischio, niente segnali giornalieri).
 - Sfera sull'emulatore: a qualità ridotta lo spicchio più piccolo si vede poco.

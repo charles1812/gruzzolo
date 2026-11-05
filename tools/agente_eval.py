@@ -79,6 +79,8 @@ def check(caso, j):
         ok("pesi: somma 100 a passi di 5 (o un profilo)", sum(w.values()) == 100 and set(w) <= set(ETF) and (prof or all(isinstance(v, int) and v % 5 == 0 and v >= 0 for v in w.values())), w)
     px = {v[0]: v[3] for v in ETF.values()}
     for p in d.get("posizioni", []): px.setdefault(p["ticker"], p["valore_eur"] / max(1, p["quote"]))
+    for v in (d.get("etf_disponibili") or {}).values():   # prezzi ed ETF equivalenti passati dal caso
+        if isinstance(v, dict) and v.get("ticker") and v.get("prezzo_eur"): px[v["ticker"]] = v["prezzo_eur"]
     px.setdefault("ANTH", 78.0)
     buys = sum(a.get("quote", 0) * px.get(norm_t(a.get("ticker")), 0) for a in az if a.get("tipo") == "compra")
     sells = sum(a.get("quote", 0) * px.get(norm_t(a.get("ticker")), 0) for a in az if a.get("tipo") == "vendi")
@@ -109,6 +111,11 @@ def check(caso, j):
         ok("lungo periodo con un intervallo", re.search(r"(tra|da)\s*[−+-]?\d[\d,.]*\s*%?\s*(e|a)\s*[−+-]?\d[\d,.]*\s*%", str(pv.get("lungo", "")).lower()) is not None, str(pv.get("lungo", ""))[:120])
         ok("giornaliero sconsigliato", re.search(r"non conv|sconsigl|meno che tenere|tenere e basta|non vale|perdi", str(pv.get("breve", "")).lower()) is not None, str(pv.get("breve", ""))[:120])
         ok("nessuna certezza", not re.search(r"sicuramente|garantit|certamente salir|di sicuro", text))
+    if A.get("with_fees"):   # acquisti + commissioni vere (gli ETF della lista del mese non pagano)
+        C = d.get("commissioni") or {}; free = set(C.get("senza_commissioni", []))
+        fees = sum(C.get("per_ordine_eur", 2.95) for a in az if a.get("tipo") == "compra" and a.get("quote", 0) > 0 and norm_t(a.get("ticker")) not in free)
+        ok("acquisti + commissioni entro i soldi del mese", buys + fees <= budget + 0.5, f"{buys:.2f} + {fees:.2f} € su {budget} €")
+    if "min_buy_eur" in A: ok(f"investe almeno {A['min_buy_eur']} €", buys >= A["min_buy_eur"], f"{buys:.0f} €")
     if "max_liq_pct" in A:   # regola dell'utente: liquidi (XEON comprati) entro il limite del risparmio del mese
         S = (d.get("budget_mese") or {}).get("da_mettere_da_parte") or d.get("da_investire_questo_mese") or 0
         xe = sum(a.get("quote", 0) * px.get("XEON.MI", 0) for a in az if a.get("tipo") == "compra" and norm_t(a.get("ticker")) == "XEON.MI")

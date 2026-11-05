@@ -33,6 +33,7 @@ Il tuo lavoro è **progettare, misurare e far entrare nell'app** strategie di po
    - versamenti mensili come nell'app (`pacSim`), quote intere quando conta;
    - tasse italiane: 26% sulle plusvalenze realizzate (12,5% sui titoli di Stato), minusvalenze compensabili solo con redditi diversi; imposta di bollo 0,2% l'anno sul conto titoli;
    - TER degli ETF e commissioni (es. 2,95 € a ordine se non c'è PAC gratuito);
+   - Fineco: 19 € a ordine sul conto normale (2,95 € Under 30 / conto Trading), ma gli ETF della lista «zero commissioni» del mese sono gratis in acquisto (novembre 2026: SWDA, XMME, EMKT, Amundi Gold; NON EIMI né SGLN). Controlla la lista ogni mese;
    - ribilanciamento solo se previsto dalla regola, con le tasse sulle vendite;
    - misura: rendimento annuo, volatilità, calo peggiore e mesi per recuperare, 12 mesi peggiori, % di periodi a 12 mesi in guadagno, rendimento/rischio, risultato per finestre di partenza diverse (2004, 2008, ultimi 10 anni);
    - per regole con parametri: dividi in periodo di costruzione e periodo di verifica (walk-forward), e dillo.

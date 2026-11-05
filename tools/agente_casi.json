@@ -1440,6 +1440,248 @@
      ]
     ]
    }
+  },
+  {
+   "id": "zero_promo",
+   "descrizione": "Portafoglio vuoto, 580 € tutti da investire (scelta dell'utente), Aggressivo; EIMI paga 2,95 € ma XMME/EMKT sono senza commissioni: usa gli equivalenti, quote intere, niente titoli singoli.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Aggressivo",
+     "pesi": {
+      "SWDA": 88,
+      "EIMI": 12
+     }
+    },
+    "posizioni": [],
+    "pesi_oggi_pct": {
+     "SWDA": 0,
+     "EIMI": 0,
+     "AGGH": 0,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1630,
+     "da_mettere_da_parte": 580,
+     "tempo_libero": 300,
+     "spese": 750,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 0,
+     "obiettivo": 2250,
+     "quota_del_risparmio_pct": 0
+    },
+    "da_investire_questo_mese": 580,
+    "test_rischio": {
+     "profilo_suggerito": "Aggressivo",
+     "massimo": "Aggressivo"
+    },
+    "regole_utente": {
+     "max_liquidi_al_mese_pct": 30,
+     "questo_mese": "tutto in ETF/azioni, niente liquidi"
+    },
+    "etf_disponibili": {
+     "SWDA": {
+      "ticker": "SWDA.MI",
+      "nome": "iShares Core MSCI World",
+      "ter": 0.2,
+      "prezzo_eur": 127.65,
+      "voce": "SWDA"
+     },
+     "EIMI": {
+      "ticker": "EIMI.MI",
+      "nome": "iShares Core MSCI EM IMI",
+      "ter": 0.18,
+      "prezzo_eur": 41.2,
+      "voce": "EIMI"
+     },
+     "XMME": {
+      "ticker": "XMME.MI",
+      "nome": "Xtrackers MSCI EM 1C",
+      "ter": 0.18,
+      "prezzo_eur": 73.43,
+      "voce": "EIMI"
+     },
+     "EMKT": {
+      "ticker": "EMKT.MI",
+      "nome": "Amundi MSCI EM Swap II",
+      "ter": 0.55,
+      "prezzo_eur": 17.01,
+      "voce": "EIMI"
+     },
+     "AGGH": {
+      "ticker": "AGGH.MI",
+      "nome": "iShares Core Global Aggregate Bond EUR Hedged",
+      "ter": 0.1,
+      "prezzo_eur": 5.5,
+      "voce": "AGGH"
+     },
+     "XEON": {
+      "ticker": "XEON.MI",
+      "nome": "Xtrackers EUR Overnight Rate Swap",
+      "ter": 0.1,
+      "prezzo_eur": 147.0,
+      "voce": "XEON"
+     }
+    },
+    "commissioni": {
+     "per_ordine_eur": 2.95,
+     "senza_commissioni": [
+      "SWDA.MI",
+      "XMME.MI",
+      "EMKT.MI"
+     ],
+     "nota": "lista del mese della banca, solo in acquisto"
+    }
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "must_buy_any": [
+     "SWDA.MI"
+    ],
+    "no_buy": [
+     "EIMI.MI"
+    ],
+    "with_fees": true,
+    "min_buy_eur": 450,
+    "allowed_extra": [
+     "XMME.MI",
+     "EMKT.MI"
+    ]
+   }
+  },
+  {
+   "id": "emergenti_sopra",
+   "descrizione": "Partito con 3 SWDA + 2 XMME (emergenti al 28% contro il 12%): XMME va contato negli emergenti, non nel mondo; i 580 € del mese vanno in SWDA, niente vendite.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Aggressivo",
+     "pesi": {
+      "SWDA": 88,
+      "EIMI": 12
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 3,
+      "valore_eur": 382.95,
+      "costo_eur": 382.95
+     },
+     {
+      "ticker": "XMME.MI",
+      "quote": 2,
+      "valore_eur": 146.86,
+      "costo_eur": 146.86
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 100,
+     "EIMI": 0,
+     "AGGH": 0,
+     "XEON": 0
+    },
+    "nota_app": "l'app conta i ticker che non conosce come SWDA",
+    "budget_mese": {
+     "stipendio_netto": 1630,
+     "da_mettere_da_parte": 580,
+     "tempo_libero": 300,
+     "spese": 750,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 0,
+     "obiettivo": 2250,
+     "quota_del_risparmio_pct": 0
+    },
+    "da_investire_questo_mese": 405,
+    "test_rischio": {
+     "profilo_suggerito": "Aggressivo",
+     "massimo": "Aggressivo"
+    },
+    "regole_utente": {
+     "max_liquidi_al_mese_pct": 30
+    },
+    "etf_disponibili": {
+     "SWDA": {
+      "ticker": "SWDA.MI",
+      "nome": "iShares Core MSCI World",
+      "ter": 0.2,
+      "prezzo_eur": 127.65,
+      "voce": "SWDA"
+     },
+     "EIMI": {
+      "ticker": "EIMI.MI",
+      "nome": "iShares Core MSCI EM IMI",
+      "ter": 0.18,
+      "prezzo_eur": 41.2,
+      "voce": "EIMI"
+     },
+     "XMME": {
+      "ticker": "XMME.MI",
+      "nome": "Xtrackers MSCI EM 1C",
+      "ter": 0.18,
+      "prezzo_eur": 73.43,
+      "voce": "EIMI"
+     },
+     "EMKT": {
+      "ticker": "EMKT.MI",
+      "nome": "Amundi MSCI EM Swap II",
+      "ter": 0.55,
+      "prezzo_eur": 17.01,
+      "voce": "EIMI"
+     },
+     "AGGH": {
+      "ticker": "AGGH.MI",
+      "nome": "iShares Core Global Aggregate Bond EUR Hedged",
+      "ter": 0.1,
+      "prezzo_eur": 5.5,
+      "voce": "AGGH"
+     },
+     "XEON": {
+      "ticker": "XEON.MI",
+      "nome": "Xtrackers EUR Overnight Rate Swap",
+      "ter": 0.1,
+      "prezzo_eur": 147.0,
+      "voce": "XEON"
+     }
+    },
+    "commissioni": {
+     "per_ordine_eur": 2.95,
+     "senza_commissioni": [
+      "SWDA.MI",
+      "XMME.MI",
+      "EMKT.MI"
+     ],
+     "nota": "lista del mese della banca, solo in acquisto"
+    }
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "must_buy_any": [
+     "SWDA.MI"
+    ],
+    "no_buy": [
+     "EIMI.MI",
+     "XMME.MI",
+     "EMKT.MI"
+    ],
+    "with_fees": true,
+    "mention": [
+     [
+      "emergenti"
+     ],
+     [
+      "xmme"
+     ]
+    ],
+    "allowed_extra": [
+     "XMME.MI",
+     "EMKT.MI"
+    ]
+   }
   }
  ]
 }

@@ -7,3 +7,4 @@
 | 3 | 10 | 264/264 regole, 14 casi × 2 (API) | vendita parziale minima se le azioni superano il massimo del test |
 | 4 | 15 | 70/70 regole | previsioni a 10 anni, 1-6 mesi, notizie e giornaliero allenate sui dati veri senza API; lezioni 11-15; 5 casi nuovi (esame in simulazione 70/70) |
 | 5 | 16 | 82/82 regole | regola dei liquidi: rispetta il limite scelto dall'utente anche con il fondo emergenza vuoto; caso limite_liquidi (esame in simulazione 82/82) |
+| 6 | 19 | 82/82 regole | v6: commissioni vere ed ETF equivalenti senza commissioni, portafoglio da zero, ticker diversi contati nella loro voce (XMME = emergenti, oro fuori strategia); 22 casi |
