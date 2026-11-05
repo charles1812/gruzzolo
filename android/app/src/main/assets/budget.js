@@ -235,6 +235,13 @@ function modePlan(mode, cats, ans, ref){
   else if(mode==="min"){ save=0.2*net; wants=avail-save; }
   else if(mode==="manual"){ save=num(B.goal); wants=avail-save; }
   else { wants=typTot; save=avail-wants; }
+  // rate di prestiti e mutui: da dove le prendo lo decidi tu col regolatore (B.loanSplit: 0 = tutto dal risparmio, 1 = tutto dal tempo libero).
+  // Senza scelta vale la modalità: Massimo e Su misura le tolgono dal risparmio, 50/30/20 e A mano dal tempo libero.
+  const loanM=needCats.filter(c=>c.loan).reduce((s,c)=>s+needVal[c.id],0);
+  const fromSave=mode==="max"||mode==="custom", wantsNoLoan=fromSave?wants:wants+loanM, saveNoLoan=fromSave?save+loanM:save;
+  const loanSplit=B.loanSplit!=null?B.loanSplit:(fromSave?0:1);
+  if(loanM>0 && cats===B.cats && B.loanSplit!=null){ wants=wantsNoLoan-loanSplit*loanM; save=saveNoLoan-(1-loanSplit)*loanM;
+    if(wants<0){ save+=wants; wants=0; } }
   const rc=(typeof replay!=="undefined" && replay && replay.enabled && typeof replayCost==="function") ? replayCost().total : 0;
   let replayUp=0;
   if(rc>0 && save<rc && avail>rc){ replayUp=rc-save; save=rc; wants=avail-rc; }
@@ -246,7 +253,7 @@ function modePlan(mode, cats, ans, ref){
   // per spiegare l'obiettivo: da dove arriva ogni euro
   const grp=f=>needCats.filter(f).reduce((s,c)=>s+needVal[c.id],0);
   const parts={ fisse:grp(c=>c.g==="fisse" && !c.sink), acc:grp(c=>!!c.sink), nec:grp(c=>c.g==="necessarie") };
-  return { mode, net, buoni, needs, wants, save, avail, per, typTot, learned, replay:rc, replayUp, parts };
+  return { mode, net, buoni, needs, wants, save, avail, per, typTot, learned, replay:rc, replayUp, parts, loanM, wantsNoLoan, saveNoLoan, loanSplit };
 }
 
 /* piano del mese fissato: calcolato una volta all'inizio del mese e poi non cambia più da solo.
@@ -887,10 +894,38 @@ function loanCardHtml(l){
     ${!i.done&&i.next?`<p class="bnote" style="margin:6px 0 0">Prossima rata il ${esc(i.next.toLocaleDateString("it-IT",{ day:"numeric", month:"long" }))}${i.totPay!=null?` · in tutto pagherai ${m0(i.totPay)}`:""}${l.budget===false?" · <b>non conta nel Budget</b>":""}.</p>`:""}
   </div>`;
 }
+/* regolatore «da dove prendo le rate»: come un volume, tutto a sinistra = solo dal risparmio, tutto a destra = solo dal tempo libero,
+   in mezzo in proporzione. Mentre lo muovi vedi subito tempo libero e risparmio del mese; Budget, Piano e Portafoglio si adattano. */
+function loanSplitCalc(sp){ const o=B.loanSplit; B.loanSplit=sp; let P; try{ P=modePlan(B.mode); } finally{ B.loanSplit=o; } return P; }
+function loanSplitBody(sp){ const P=loanSplitCalc(sp), d=x=>x>=0.5?`<em class="neg">−${m0(x)} al mese</em>`:`<em class="pos">invariato</em>`;
+  return `<div class="ls-g"><div><small>🎉 Tempo libero e weekend</small><b class="num">${m0(Math.max(0,P.wants))}</b>${d(P.wantsNoLoan-P.wants)}</div>
+    <div><small>🏺 Da mettere da parte</small><b class="num">${m0(Math.max(0,P.save))}</b>${d(P.saveNoLoan-P.save)}</div></div>
+    ${P.save<P.replay-0.5?`<p class="bnote warn" style="margin:8px 0 0">Il risparmio scende sotto il Replay (${m0(P.replay)}): il Replay resta, quindi il tempo libero scende ancora.</p>`:""}`; }
+function openLoanSplit(name){
+  const P0=modePlan(B.mode); if(!(P0.loanM>0)) return;
+  let el=document.getElementById("lsScrim"); if(!el){ el=document.createElement("div"); el.className="scrim"; el.id="lsScrim"; document.body.appendChild(el); }
+  const sp=Math.round((P0.loanSplit)*100);
+  el.innerHTML=`<div class="sheet"><h2>🏦 Da dove prendo le rate?</h2>
+    <p class="hint">${name?`Con «${esc(name)}» l`:"L"}e rate fanno <b class="num">${money(P0.loanM)}</b> al mese. Sposta il regolatore: tutto a sinistra le paghi solo con il risparmio, tutto a destra solo tagliando tempo libero e weekend, in mezzo in proporzione.</p>
+    <div class="ls-wrap"><div class="ls-ends"><span>🏺 dal risparmio</span><span>🎉 dal tempo libero</span></div>
+      <input type="range" class="ls-range" id="lsRange" min="0" max="100" step="5" value="${sp}" aria-label="Da dove prendo le rate">
+      <div id="lsBody">${loanSplitBody(sp/100)}</div></div>
+    <p class="bnote" style="margin-top:10px">Budget, Piano e serbatoio del Portafoglio si aggiornano da soli. Puoi cambiarlo quando vuoi dal riquadro dei prestiti nel Budget.</p>
+    <div class="btn-row"><button class="btn ghost" data-ls="cancel">Lascia com'era</button><button class="btn gold" data-ls="ok">Va bene così</button></div></div>`;
+  openM("#lsScrim");
+}
+document.addEventListener("input",e=>{ if(e.target.id!=="lsRange") return; const b=document.getElementById("lsBody"); if(b) b.innerHTML=loanSplitBody(+e.target.value/100); });
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-ls]"); if(!b) return;
+  if(b.dataset.ls==="open"){ openLoanSplit(""); return; }
+  if(b.dataset.ls==="ok"){ B.loanSplit=(+document.getElementById("lsRange").value)/100; unfreezePlan(); bSave(); renderBudget(); if(typeof renderPiano==="function") try{ renderPiano(); }catch(x){}
+    if(typeof INV!=="undefined") INV=null; if(typeof mountPot==="function") mountPot(); const P=modePlan(B.mode); toast(`Tempo libero ${m0(P.wants)} · da parte ${m0(P.save)} al mese`); }
+  closeM("#lsScrim");
+});
 function loansPanelHtml(){ const L=B.loans||[]; if(!L.length) return "";
   const act=L.map(loanInfo).filter(i=>!i.done), debt=act.reduce((a,i)=>a+i.left,0), rata=act.reduce((a,i)=>a+i.M,0);
   return `<section><div class="eyebrow" style="margin:0 4px 8px">🏦 Prestiti e mutui</div><div class="card loans">
     <div class="loan-tot"><div><small>debito che resta</small><b class="num">${m0(debt)}</b></div><div><small>rate al mese</small><b class="num">${money(rata)}</b></div></div>
+    ${act.length&&modePlan(B.mode).loanM>0?`<button class="stat-link" data-ls="open" style="margin-bottom:8px">🎚️ Le rate le prendo ${(()=>{ const x=modePlan(B.mode).loanSplit; return x<=0?"dal risparmio":x>=1?"dal tempo libero":`${Math.round(x*100)}% dal tempo libero, ${100-Math.round(x*100)}% dal risparmio`; })()} <span>cambia →</span></button>`:""}
     ${L.map(loanCardHtml).join("")}</div></section>`; }
 let LOAN_EDIT=null;
 function loanFormHtml(l){
@@ -943,7 +978,8 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-ln]"); if
     B.loans=B.loans||[]; let l=box.dataset.id==="new"?null:B.loans.find(x=>x.id===box.dataset.id);
     if(!l){ l={ id:uid("ln") }; B.loans.push(l); }
     Object.assign(l, { n, from, kind:box.dataset.k||"prestito", amt, monthly, start, end:end||"", rate:rate>0?rate:null, budget:box.querySelector('[data-ln="budget"]').classList.contains("on") });
-    LOAN_EDIT=null; const i=loanInfo(l); toast(`«${n}»: rimborsato ${m0(i.repaid)} su ${m0(i.P)}`); if(box.closest("#lnScrim")) closeM("#lnScrim"); loanAfter(); return; }
+    LOAN_EDIT=null; const i=loanInfo(l); toast(`«${n}»: rimborsato ${m0(i.repaid)} su ${m0(i.P)}`); if(box.closest("#lnScrim")) closeM("#lnScrim"); loanAfter();
+    if(l.budget!==false && !i.done) setTimeout(()=>openLoanSplit(l.n),350); return; }
 });
 
 /* una spesa in una riga, toccandola si modifica */

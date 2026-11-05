@@ -388,13 +388,18 @@ function potHtml(){
   const col=(e,n,d,t,c1,c2)=>{ const f=t>0?Math.max(0,Math.min(1,d/t)):0;
     return `<div class="t4-col" style="--c1:${c1};--c2:${c2};--h:${(f*100).toFixed(1)}%;flex-grow:${Math.max(0.6,t/(tot||1)*2).toFixed(2)};cursor:default"><div class="fb-liq"><i class="fb-w1"></i><i class="fb-w2"></i><b class="fb-bub"></b><b class="fb-bub"></b><b class="fb-bub"></b></div>
       <span class="t4-v num">${m0(d)}<small> / ${m0(t)}</small></span><span class="t4-l"><span>${e}</span>${n}</span></div>`; };
-  let h=`<div class="card inv-card"><div class="t4-h"><small>Serbatoio del mese · strategia ${esc(PROFILES[PL.prof].n)}${PL.provisional?" (provvisoria)":""} <button class="add" data-b="goto" data-v="piano" style="font-size:11px">cambia ▸</button></small>
+  const todo=Math.max(0,tot-filled), dn=tot>0&&todo<1;
+  let h=`<details class="pot-d" ${POT_OPEN?"open":""}><summary class="pot-n ${dn?"ok":""}"><span class="pot-i">${dn?"✅":"🏺"}</span>
+      <span class="pot-t"><b>${dn?"Serbatoio del mese pieno":first&&!ch&&S>0?"Questo mese: investi o tieni sul conto?":`Da fare questo mese: ${m0(todo)}`}</b>
+        <small>🛟 ${m0(Math.max(0,fund-fDone))} sul conto · 📈 ${m0(Math.max(0,invT-invD))} in ETF${filled>=1?` · ✓ ${m0(filled)} già fatti`:""} · ${esc(PL.prof===6?"Su misura":PROFILES[PL.prof].n)}</small></span>
+      <span class="pot-p"><i style="width:${tot>0?Math.round(filled/tot*100):0}%"></i></span><span class="pot-c">▾</span></summary>
+    <div class="card inv-card"><div class="t4-h"><small>Serbatoio del mese · strategia ${esc(PL.prof===6?"Su misura":PROFILES[PL.prof].n)}${PL.provisional?" (provvisoria)":""} <button class="add" data-b="goto" data-v="piano" style="font-size:11px">cambia ▸</button></small>
       <b class="num">${m0(filled)} <small style="font-size:.5em">di ${m0(tot)}</small></b>
       <span>da mettere da parte questo mese: 🛟 ${m0(fund)} sul conto + 📈 ${m0(invT)} da investire${m.pot>=1?` (con ${m0(m.pot)} dei mesi scorsi)`:""}</span></div>
     ${tot>0?`<div class="t4-tank inv-tank">${col("🛟","Sul conto",fDone,fund,"#7fd6d0","#2f8f8a")}${invT>0?col("📈","Investimenti",invD,invT,"#f2cf82","#b8862f"):""}</div>`:""}
     ${fund>0?`<button class="add" data-pot="fund" style="margin-top:8px">${fDone?"✓ Messi sul conto · annulla":`✅ Ho messo ${money(fund)} sul conto (fondo emergenza)`}</button>`:""}
     ${p.repTot>0&&!first?`<p class="bnote" style="margin:4px 0 0">Il Replay compra da solo ${money(p.repTot)} il giorno ${replay.dayOfMonth||1}: è già compreso.</p>`:""}
-    ${p.repTot>0&&!first?`<p class="bnote" style="margin:2px 0 0">Il Replay compra da solo ${money(p.repTot)} il giorno ${replay.dayOfMonth||1}: è già compreso.</p>`:""}`;
+`;
   if(first && !ch && S>0){
     h+=`<p class="bnote" style="margin:12px 0 6px"><b>Vuoi investire questo mese?</b> È il primo mese: decidi tu. Dal prossimo la divisione la fa il profilo.</p>
       <div class="btn-row" style="margin-top:0"><button class="btn gold" data-b="fminv" data-v="inv">Sì, dimmi cosa comprare</button><button class="btn ghost" data-b="fminv" data-v="keep">No, tienili sul conto</button></div>`;
@@ -406,7 +411,7 @@ function potHtml(){
     else h+=`<div id="invInline">${invListHtml(true)}</div>`;
   } else if(S>0) h+=`<p class="bnote" style="margin:10px 0 0">${m.done>0?"Questo mese hai già investito la parte prevista.":"Questo mese tutto va sul conto: il fondo emergenza viene prima degli investimenti."}</p>`;
   if(!(first && !ch)) h+=`<p class="bnote" style="margin:8px 0 0">${esc(p.why)}</p>`;
-  h+=`</div>`;
+  h+=`</div></details>`;
   return h+fine;     // il serbatoio sostituisce la barra «Investimento del mese»
 }
 /* la proposta resta la stessa finché non cambia quanto c'è da investire (così − e + non si perdono) */
@@ -428,6 +433,8 @@ function invListHtml(inline){
     <div class="btn-row"><button class="btn gold" data-inv="ok" ${spent>0&&left>=-0.01?"":"disabled"}>✅ Ho comprato: aggiungi al portafoglio</button></div>
     ${inline?`<button class="btn ghost" ${(()=>{ try{ return bStatus().P.partial; }catch(e){ return false; } })()?`data-b="fminv" data-v="keep"`:`data-inv="skip"`} style="margin-top:8px">Non questo mese</button>`:`<button class="btn ghost" data-inv="close" style="margin-top:10px">Non ora</button>`}`;
 }
+let POT_OPEN=false;
+document.addEventListener("toggle",e=>{ if(e.target.classList && e.target.classList.contains("pot-d")) POT_OPEN=e.target.open; }, true);
 function mountPot(){ const h=document.getElementById("potHost"); if(!h) return; if(typeof PL==="undefined"){ h.innerHTML=""; return; } h.innerHTML=potHtml(); }
 
 /* proposta: quote intere verso i pesi obiettivo */

@@ -18,7 +18,8 @@ function pnReal(){
   try{ const H=(typeof monthHistory==="function")?monthHistory():[]; const C=H.filter(x=>!x.cur && !x.sparse && !x.partial);
     if(C.length){ n=C.length; real=C.reduce((a,x)=>a+x.saved,0)/n; } }catch(e){}
   let goal=0; try{ goal=steadyMonthly(planCompute()); }catch(e){}
-  const base=Math.max(rc, Math.round(real!=null?real:goal));
+  // il Piano segue il Budget: quanto metti da parte ogni mese adesso (se cambia il Budget, cambia anche il Piano)
+  const base=Math.max(rc, Math.round(goal>0?goal:(real!=null?real:0)));
   return { rc:Math.round(rc), real:real!=null?Math.round(real):null, n, goal:Math.round(goal), base };
 }
 /* inflazione personale: media annua degli ultimi 10 anni dei prezzi veri (Eurostat), pesata su come spendi tu.
@@ -54,19 +55,17 @@ function renderPiano(){
   if(typeof DT!=="undefined" && !DT.es && !DT.busy && typeof dtLoad==="function" && !PL._dtTry){ PL._dtTry=1; dtLoad(false).then(()=>{ if(document.getElementById("page-piano").classList.contains("active")) renderPiano(); }); }
   const R=pnReal(), M=pnM(R), lo=Math.floor(R.rc/10)*10, hi=Math.ceil(Math.max(R.base*2, R.rc+600)/50)*50;
   const IN=pnInfl(), inf=IN.r, v0=totals().val+((+PL.pot)||0);
-  let h=`<section><div class="card fz pn-hero">
-    <div class="fz-top"><div class="fz-val"><small>Puoi investire ogni mese</small><b class="num" id="pnM">${m0(M)}</b>
-      <span>${R.real!=null?`risparmi davvero <b class="num">${m0(R.real)}</b> al mese (media di ${R.n} ${R.n===1?"mese":"mesi"})`:`il tuo Budget prevede <b class="num">${m0(R.goal)}</b> al mese`}</span></div></div>
-    <div class="pn-sl"><button class="pn-st" data-pn="step" data-v="-10" aria-label="10 € in meno">−</button><input type="range" class="pn-range" id="pnRange" min="${lo}" max="${hi}" step="10" value="${M}" aria-label="Quanto investire al mese"><button class="pn-st" data-pn="step" data-v="10" aria-label="10 € in più">+</button></div>
-    <div class="pn-ticks">${R.rc?`<span>Replay ${m0(R.rc)}</span>`:"<span>0 €</span>"}<span>il tuo ritmo ${m0(R.base)}</span><span>${m0(hi)}</span></div>
-    <div class="fz-ds pn-ds"><span class="fz-d">hai già <b class="num">${m0(v0)}</b></span><span class="fz-d">la tua inflazione <b class="num">${nf2.format(inf*100)}%</b></span>${PL.nm!=null?`<button class="fz-d pn-reset" data-pn="reset">↺ il mio ritmo</button>`:""}</div>
-    ${IN.parts.length?`<p class="pn-note">Inflazione media degli ultimi 10 anni pesata su come spendi (all'anno: ${IN.parts.map(p=>`${p[0].toLowerCase()} ${p[1]>=0?"+":"−"}${nf2.format(Math.abs(p[1]*100))}%`).join(" · ")}). Tutti i numeri qui sono in euro di oggi.</p>`:""}
-  </div></section>`;
+  // niente cursore: il mese arriva dal Budget e dalla strategia; qui solo da dove arriva
+  let fs=0; try{ fs=planCompute().fund<planCompute().target?fundShare(PL.prof):0; }catch(e){}
+  const inv=Math.round(M*(1-fs));
+  let h=`<section><div class="pn-link"><span>📥</span><div><b>Dal Budget: ${m0(M)} al mese da mettere da parte</b>
+    <small>${fs>0?`🛟 ${m0(M-inv)} al fondo emergenza finché non è pieno · `:""}📈 ${m0(inv)} in ETF · hai già ${m0(v0)} · inflazione ${nf2.format(inf*100)}%${R.real!=null?` · negli ultimi ${R.n} ${R.n===1?"mese":"mesi"} hai messo da parte ${m0(R.real)} in media`:""}</small></div>
+    <button class="add" data-b="goto" data-v="budget">cambia ▸</button></div></section>`;
 
   el.innerHTML=h+`<div id="pnRest">${pnRestHtml(R,M)}</div>`;
   if(typeof loadPlanPrices==="function") loadPlanPrices(false);
 }
-function pnM(R){ R=R||pnReal(); return Math.max(R.rc, Math.round(PL.nm!=null?PL.nm:R.base)); }
+function pnM(R){ R=R||pnReal(); return Math.max(R.rc, Math.round(R.base)); }
 /* tutto quello che dipende dal mese: si ridisegna mentre muovi il cursore */
 function pnRestHtml(R,M){
   const IN=pnInfl(), inf=IN.r, v0=totals().val+((+PL.pot)||0);

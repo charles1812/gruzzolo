@@ -36,6 +36,10 @@ const HS_FALLBACK = { 1:{ cagr:.036, vol:.041, mdd:-.110, worst12:-.102, best12:
 /* previsioni: volatilità e crolli veri, ma rendimenti medi prudenti (nominali) e inflazione 2% */
 const FWD = { SWDA:.065, EIMI:.07, AGGH:.025, XEON:.02 }, INFL = .02;
 const EMERG_MONTHS = { stabile:3, medio:4, variabile:6 };
+/* quanto del risparmio del mese va sul conto (fondo emergenza) finché il fondo non è pieno: lo decide la strategia.
+   Aggressivo = tutto investito; su misura = in proporzione a quanto è prudente (liquidità e obbligazioni). */
+const FUND_SHARE = { 1:.7, 2:.5, 3:.35, 4:.2, 5:0 };
+function fundShare(q,cw){ q=q||PL.prof||3; if(q===6){ const w=cw||PL.cw||{}; return Math.min(.7, Math.max(0, ((w.XEON||0)+(w.AGGH||0)*.5)/100)); } return FUND_SHARE[q]!=null?FUND_SHARE[q]:.35; }
 /* limiti del profilo: verificati sulle finestre storiche (tools/backtest.py) */
 const HCAP = { lt3:1, "3_5":2, "5_7":3, "7_10":4, gt10:5 };
 const HLAB = { lt3:"entro 3 anni", "3_5":"3–5 anni", "5_7":"5–7 anni", "7_10":"7–10 anni", gt10:"oltre 10 anni" };
@@ -182,14 +186,15 @@ function planCompute(){
   const ess=essentialMonthly(), months=EMERG_MONTHS[PL.ans.lavoro]||4, target=ess*months;
   const fund=+PL.fund||0;
   let toFund=0, why="";
-  if(fund<ess){ toFund=S; why="Prima di investire serve almeno un mese di spese da parte: questo mese tutto va al fondo emergenza."; }
-  else if(fund<target){ toFund=Math.min(target-fund, S*0.5); why=`Il fondo emergenza è al ${Math.round(fund/target*100)}% (obiettivo ${months} mesi di spese): metà del risparmio va lì finché non è pieno.`; }
-  else why=`Il fondo emergenza è completo (${months} mesi di spese): tutto il risparmio può essere investito.`;
+  const fs=fundShare(PL.prof), pc=Math.round(fs*100), pn=PL.prof===6?"Su misura":prof.n;
+  if(fund<target && fs>0){ toFund=Math.min(target-fund, S*fs); why=`Strategia ${pn}: il ${pc}% del risparmio va al fondo emergenza (è al ${Math.round(fund/target*100)}% di ${months} mesi di spese), il resto in ETF.`; }
+  else if(fund<target) why=`Strategia ${pn}: tutto il risparmio va in ETF. Il fondo emergenza (${m0(fund)} di ${m0(target)}) non lo riempio io: con questa strategia lo scegli tu.`;
+  else why=`Il fondo emergenza è completo (${months} mesi di spese): tutto il risparmio va in ETF secondo la strategia ${pn}.`;
   // primo mese: investire o no lo scegli tu nel Budget (finché non scegli, restano sul conto); dal secondo mese decide il profilo
   const firstM=!!(ms.st && ms.st.P.partial);
   if(firstM){ const ch=(B.firstInv||{})[ms.st.cy.key];
     if(ch!=="inv"){ toFund=S; why=ch==="keep"?"Primo mese: hai scelto di tenere tutto sul conto.":"Primo mese: scegli nel Budget se investirne una parte; finché non scegli restano sul conto."; }
-    else { toFund=fund<target?Math.min(target-fund, S*0.5):0; why=fund<target?`Primo mese, hai scelto di investire: metà va al fondo emergenza (è al ${Math.round(fund/target*100)}% di ${months} mesi di spese), il resto in ETF secondo il profilo.`:"Primo mese, hai scelto di investire: il fondo emergenza è completo, tutto va in ETF secondo il profilo."; } }
+    else { toFund=fund<target?Math.min(target-fund, S*fs):0; why=fund<target&&fs>0?`Primo mese, hai scelto di investire: con la strategia ${pn} il ${pc}% va al fondo emergenza, il resto in ETF.`:`Primo mese, hai scelto di investire: con la strategia ${pn} tutto va in ETF.`; } }
   // il Replay parte da solo: al fondo va solo quello che resta dopo il Replay
   // (nel primo mese il Replay è già fuori dai soldi da mettere da parte, quindi non lo sottraggo di nuovo)
   const rcM=(!firstM && replay && replay.enabled && (!ms.st || replayPending(ms.st))) ? replayCost().total : 0;

@@ -257,3 +257,10 @@ main.page .st-in{border-radius:50% !important; background:var(--bg); border:2px 
 #stTool .hud-kv > :first-child{width:auto; flex:1; min-width:0}
 #stTool .hud-kv > :last-child{flex:none}
 .st-gauge{max-width:140px}
+.st-3d{display:block; width:100%; height:220px; touch-action:pan-y; cursor:grab}
+.st-3dn{margin:2px 0 8px; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#5E7884; text-align:center}
+.st-tmrow{display:flex; justify-content:center; margin:0 0 10px}
+.st-tm{font-size:11px}
+.st-vz{display:flex; justify-content:center; gap:4px; margin:0 0 10px}
+.st-vz button{flex:0 1 38px; min-width:0; height:34px; font-size:16px; padding:0; border:1px solid #17323D; background:rgba(9,17,26,.8); border-radius:8px; cursor:pointer; opacity:.6}
+.st-vz button.on{border-color:#00E5FF; box-shadow:0 0 10px rgba(0,229,255,.35); opacity:1}

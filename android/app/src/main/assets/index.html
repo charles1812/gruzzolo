@@ -352,8 +352,8 @@
 <main class="page" id="page-sfide"><div id="sfBody"></div></main>
 
 <main class="page" id="page-portafoglio">
-<section id="potHost"></section>
 <section id="fzHost"></section>
+<section id="potHost"></section>
 <section id="ideasHost"></section>
 <section id="scHost"></section>
 <section class="hero pf-hero">
@@ -509,6 +509,12 @@
     </label>
     <label class="fld"><span class="lab">Cambio EUR/USD manuale — vale 1 ora, poi torna automatico (vuoto = sempre auto)</span><input id="sFx" type="number" inputmode="decimal" step="any" placeholder="vuoto = automatico"></label>
     <label class="fld"><span class="lab">Proxy CORS (per i prezzi, non per l'AI)</span><input id="sProxy" placeholder="https://api.allorigins.win/raw?url="></label>
+
+    <div class="setgroup">
+      <div class="gt">Grafica</div>
+      <label class="fld" style="margin:0"><span class="lab">Grafico della strategia nel Piano</span>
+        <select id="sViz"><option value="vaso">🏺 Il vaso, con la macchina del tempo</option><option value="giardino">🌳 Il giardino, con la macchina del tempo</option><option value="torta">🍩 La torta 3D</option></select></label>
+    </div>
 
     <div class="setgroup">
       <div class="gt">Intelligenza artificiale</div>
@@ -2214,6 +2220,8 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ refresh
 <script src="stati.js"></script>
 <script src="piano2.js"></script>
 <script src="strategia.js"></script>
+<script src="strategia-viz.js"></script>
+<script src="strategia-viz2.js"></script>
 <script src="sfide.js"></script>
 <script src="scopri.js"></script>
 <script src="updater.js"></script>
