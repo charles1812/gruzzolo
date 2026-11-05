@@ -264,3 +264,24 @@ main.page .st-in{border-radius:50% !important; background:var(--bg); border:2px 
 .st-vz{display:flex; justify-content:center; gap:4px; margin:0 0 10px}
 .st-vz button{flex:0 1 38px; min-width:0; height:34px; font-size:16px; padding:0; border:1px solid #17323D; background:rgba(9,17,26,.8); border-radius:8px; cursor:pointer; opacity:.6}
 .st-vz button.on{border-color:#00E5FF; box-shadow:0 0 10px rgba(0,229,255,.35); opacity:1}
+/* controllo del portafoglio (agente) */
+.rv-top{display:flex; gap:14px; flex-wrap:wrap; margin:2px 0 8px}
+.rv-top>div{display:flex; flex-direction:column; gap:2px}
+.rv-top b{font-size:13px}
+.rv-log{font-family:ui-monospace,Consolas,monospace; font-size:10.5px; line-height:1.55; background:rgba(4,7,11,.6); border:1px solid #17323D; padding:6px 8px; margin:6px 0 8px; position:relative}
+.rv-log .dim{color:#5E7884}
+.rv-cur{color:#FFB020; animation:hudBlinkRv .7s steps(1) infinite}
+@keyframes hudBlinkRv{50%{opacity:0}}
+.rv-sum{font-size:13px; line-height:1.45; margin:6px 0 8px; color:#D3E9F0}
+.rv-wr{display:grid; grid-template-columns:52px 1fr 70px; gap:8px; align-items:center; font-size:11px; margin:3px 0}
+.rv-wr i{position:relative; height:6px; background:#0E222B; display:block}
+.rv-wr i b{position:absolute; left:0; top:0; bottom:0; box-shadow:0 0 8px currentColor}
+.rv-wr i em{position:absolute; top:-3px; bottom:-3px; width:2px; background:#D3E9F0; opacity:.7}
+.rv-wr small{color:#5E7884}
+.rv-a{display:flex; gap:10px; align-items:flex-start; padding:7px 8px; border-left:2px solid #5E7884; background:rgba(9,17,26,.7); margin:4px 0; font-size:12px}
+.rv-a.compra{border-color:#1DF2B6} .rv-a.compra b{color:#1DF2B6}
+.rv-a.vendi{border-color:#FF3B5C} .rv-a.vendi b{color:#FF3B5C}
+.rv-a b{font-size:10.5px; letter-spacing:1px; white-space:nowrap; min-width:72px}
+.rv-a span{display:flex; flex-direction:column; gap:2px}
+.rv-a small{color:#5E7884; font-size:10.5px}
+.rv-r{font-size:11.5px; color:#FFB020; margin:3px 0}

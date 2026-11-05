@@ -198,6 +198,7 @@ function pnRestHtml(R,M){
   const IN=pnInfl(), inf=IN.r, v0=totals().val+((+PL.pot)||0);
   const HZ=PL.hz||20;
   let h=stHtml(M, null, HZ, v0, inf);
+  if(typeof rvHtml==="function") h+=rvHtml();
   h+=`<p class="pn-disc">Backtest con i rendimenti mensili veri dal 2004 (MSCI World, MSCI EM, obbligazioni globali coperte, tasso BCE). Previsioni ricampionando quegli anni con rendimenti futuri prudenti e la tua inflazione. Non sono previsioni certe né consulenza: la scelta è tua.</p>`;
   return h;
 }

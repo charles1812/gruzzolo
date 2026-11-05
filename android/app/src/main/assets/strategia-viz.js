@@ -14,7 +14,7 @@ const VZ_MODES = {
   giardino:{ e:"🌳", n:"Il giardino", note:"alberi = azioni · siepe = obbligazioni · stagno = liquidità · vento = quanto oscilla", tm:true },
   torta:{ e:"🍩", n:"La torta 3D", note:"fetta = peso · altezza = quanto oscilla · trascina per girare", tm:false },
 };
-function vzMode(){ const v=(typeof settings!=="undefined" && settings.stViz) || "vaso"; return VZ_MODES[v]?v:"vaso"; }
+function vzMode(){ const v=(typeof settings!=="undefined" && settings.stViz) || "sfera"; return VZ_MODES[v]?v:"vaso"; }
 function vzTitle(){ return "strategia // "+VZ_MODES[vzMode()].n.toLowerCase(); }
 function vzNote(tn){ return VZ_MODES[vzMode()].note; }
 function vzChipsHtml(){ const m=vzMode(); return `<div class="st-vz" role="tablist" aria-label="Come vedere la strategia">${Object.entries(VZ_MODES).map(([k,v])=>`<button class="${k===m?"on":""}" data-vz="${k}" title="${esc(v.n)}" aria-label="${esc(v.n)}">${v.e}</button>`).join("")}</div>`; }
@@ -196,20 +196,56 @@ function vzGarden(x, W, H, t, dt, st){
   labels.forEach(([X,Y,k,f])=>{ x.fillStyle=ST_COL[k]; x.font="600 11px ui-monospace, Consolas, monospace"; x.fillText(`${shortName(ASSETS[k].t)} ${Math.round(f*100)}%`, X, Math.min(H-14,Y)); x.fillStyle="#5E7884"; x.font="600 9px ui-monospace, Consolas, monospace"; x.fillText(ST_LAB[k].toUpperCase(), X, Math.min(H-2,Y+12)); });
 }
 
+/* ---------- cornice HUD comune (stile grafica-app): griglia di puntini, scansione, tacche ai bordi,
+   oscilloscopio dei rendimenti mensili veri della strategia e telemetria (rendimento, oscillazione, calo, costi) ---------- */
+function vzSeries(){ const key=JSON.stringify(ST3.tgt||{}); if(VZ.ser && VZ.ser.key===key) return VZ.ser;
+  const w=stFrac(ST3.tgt||{}), N=HIST?HIST.months.length:0, r=[]; for(let t=0;t<N;t++){ let v=0; for(const k in w) v+=w[k]*HIST.r[k][t]; r.push(v); }
+  return VZ.ser={ key, r, st:stStats(w), ter:stTer(ST3.tgt||{}) }; }
+function vzHudBack(x, W, H, t){
+  x.fillStyle="#0E222B"; for(let gy=11; gy<H; gy+=22) for(let gx=11; gx<W; gx+=22) x.fillRect(gx,gy,1.2,1.2);
+  const g=x.createRadialGradient(W/2,0,10,W/2,0,W*0.8); g.addColorStop(0,"rgba(0,229,255,.07)"); g.addColorStop(1,"rgba(0,229,255,0)"); x.fillStyle=g; x.fillRect(0,0,W,H);
+}
+function vzHudFront(x, W, H, Hc, t, st){
+  // scansione che scende (7 s), tacche ai bordi
+  const sy=(t/7%1)*H, sg=x.createLinearGradient(0,sy-26,0,sy); sg.addColorStop(0,"rgba(0,229,255,0)"); sg.addColorStop(1,"rgba(0,229,255,.10)"); x.fillStyle=sg; x.fillRect(0,sy-26,W,26);
+  x.strokeStyle="rgba(94,120,132,.55)"; x.lineWidth=1; x.beginPath();
+  for(let y=8; y<H-4; y+=12){ const l=(Math.round(y/12)%4===0)?7:3; x.moveTo(0,y); x.lineTo(l,y); x.moveTo(W,y); x.lineTo(W-l,y); } x.stroke();
+  if(typeof HIST==="undefined" || !HIST) return;
+  const S=vzSeries(), N=S.r.length, win=Math.min(84,N), y0=H+15, h=18, mid=y0+h/2;
+  const end = st.month!=null ? Math.max(win, st.month+1) : win+Math.floor(t*2.5)%(N-win);
+  const i0=end-win, X=i=>8+(W-16)*(i-i0)/(win-1), Y=v=>mid-Math.max(-1,Math.min(1,v/0.09))*h/2;
+  x.fillStyle="rgba(9,17,26,.9)"; x.fillRect(0,H,W,Hc-H); x.strokeStyle="#17323D"; x.beginPath(); x.moveTo(0,H+0.5); x.lineTo(W,H+0.5); x.stroke();
+  x.setLineDash([2,3]); x.strokeStyle="rgba(94,120,132,.5)"; x.beginPath(); x.moveTo(8,mid); x.lineTo(W-8,mid); x.stroke(); x.setLineDash([]);
+  x.save(); x.globalCompositeOperation="lighter";
+  [[3.5,"rgba(0,229,255,.18)"],[1.2,"#00E5FF"]].forEach(([lw,c])=>{ x.strokeStyle=c; x.lineWidth=lw; x.beginPath(); for(let i=i0;i<end;i++){ const px=X(i), py=Y(S.r[i]); i===i0?x.moveTo(px,py):x.lineTo(px,py); } x.stroke(); });
+  for(let i=i0;i<end;i++) if(S.r[i]<-0.05){ x.fillStyle="#FF3B5C"; x.beginPath(); x.arc(X(i),Y(S.r[i]),2,0,Math.PI*2); x.fill(); }
+  const lx=X(end-1), ly=Y(S.r[end-1]); x.fillStyle=Math.sin(t*8)>0?"#FFFFFF":"#00E5FF"; x.beginPath(); x.arc(lx,ly,2.4,0,Math.PI*2); x.fill();
+  x.restore();
+  x.font=VZ_FONT0(8.5); x.textAlign="left"; x.fillStyle="#5E7884"; x.fillText(`▍RENDIMENTI MENSILI · ${HIST.months[i0].slice(0,4)}–${HIST.months[end-1].slice(0,4)}`, 8, H+11);
+  const ss=S.st; if(ss){ const tx=`RENDE ${stPct(ss.cagr)}  ·  OSCILLA ${Math.round(ss.vol*100)}%  ·  CALO ${Math.round(ss.mdd*100)}%  ·  COSTI ${nf2.format(S.ter)}%`;
+    x.fillStyle="#D3E9F0"; x.fillText(tx, 8, Hc-5); }
+  x.textAlign="right"; x.fillStyle=Math.sin(t*4)>0?"#FF3B5C":"#5E7884"; x.fillText("■ STORICO", W-8, H+11);
+}
+const VZ_FONT0=(s,w)=>`${w||600} ${s}px ui-monospace, Consolas, monospace`;
+
 /* il disegno: torta (com'era) oppure vaso / giardino */
 const vzTorta = st3dFrame;
 st3dFrame = function(t){
   const m=vzMode(); if(m==="torta") return vzTorta(t);
   ST3.raf=0; const c=document.getElementById("st3d"); if(!c || !ST3.tgt || document.hidden) return;
-  const dt=ST3.last?Math.min(0.05,(t-ST3.last)/1000):0.016; ST3.last=t; const ts=t/1000;
+  const raw=ST3.last?(t-ST3.last):16, dt=Math.min(0.05,raw/1000); ST3.last=t; const ts=t/1000;
+  // qualità che si adatta: se i fotogrammi sono lenti disegno meno filamenti e stelle (VZ.q da 0,25 a 1)
+  VZ.q=VZ.q||1; if(raw>45) VZ.q=Math.max(0.25,VZ.q*0.9); else if(raw<24) VZ.q=Math.min(1,VZ.q*1.01);
   if(!ST3.cur) ST3.cur=Object.fromEntries(ST_KEYS.map(k=>[k,0]));
   ST_KEYS.forEach(k=>{ const g=ST3.tgt[k]||0, d=g-ST3.cur[k]; ST3.cur[k]= Math.abs(d)>0.05 ? ST3.cur[k]+d*Math.min(1,dt*5) : g; });
-  const dpr=window.devicePixelRatio||1, W=c.clientWidth||300, H=Math.round(Math.min(360, W*0.95));
-  if(c.width!==Math.round(W*dpr) || c.height!==Math.round(H*dpr)){ c.width=Math.round(W*dpr); c.height=Math.round(H*dpr); c.style.height=H+"px"; }
-  const x=c.getContext("2d"); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,W,H);
+  // sotto il disegno c'è la striscia HUD (oscilloscopio dei rendimenti mensili e telemetria): 36 px in più
+  const dpr=window.devicePixelRatio||1, W=c.clientWidth||300, H=Math.round(Math.min(360, W*0.95)), Hc=H+48;
+  if(c.width!==Math.round(W*dpr) || c.height!==Math.round(Hc*dpr)){ c.width=Math.round(W*dpr); c.height=Math.round(Hc*dpr); c.style.height=Hc+"px"; }
+  const x=c.getContext("2d"); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,W,Hc);
   const st=vzState(dt);
-  const md=VZ_MODES[m]; if(m==="vaso") vzVase(x, W, H, ts, dt, st); else if(m==="giardino") vzGarden(x, W, H, ts, dt, st); else if(md.draw){ VZ_LQ=[]; md.draw(x, W, H, ts, dt, st); vzLabelsFlush(x, W, H); }
+  const md=VZ_MODES[m]; vzHudBack(x, W, H, ts); if(m==="vaso") vzVase(x, W, H, ts, dt, st); else if(m==="giardino") vzGarden(x, W, H, ts, dt, st); else if(md.draw){ VZ_LQ=[]; md.draw(x, W, H, ts, dt, st); vzLabelsFlush(x, W, H); }
   if(md.tm) vzWeather(x, W, H, st, dt);
+  vzHudFront(x, W, H, Hc, ts, st);
   const still=!!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   if(!still || (VZ.tm && VZ.tm.on)) ST3.raf=requestAnimationFrame(st3dFrame);
 };

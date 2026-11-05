@@ -41,12 +41,12 @@ function vzSky(x, W, H, t, dt, st){
     const y2=Y*Math.cos(pit)-Z*Math.sin(pit), z2=Y*Math.sin(pit)+Z*Math.cos(pit); return z2>0.15 ? [cx+X/z2*F, cy-y2/z2*F, z2] : null; };
   K.keys.forEach(k=>{ const S=vzStars(k), n=Math.max(1, Math.round(K.f(k)*100*grow)), col=ST_COL[k], vol=ST_VOL[k]||.1, P=[];
     for(let i=0;i<n;i++){ const s=S[i], p=proj(s.yw, s.pt); P.push(p); }
-    x.strokeStyle=col; x.globalAlpha=0.28; x.lineWidth=0.8; x.beginPath();
+    x.save(); x.globalCompositeOperation="lighter"; x.strokeStyle=col; x.globalAlpha=0.28; x.lineWidth=0.8; x.beginPath();
     for(let i=1;i<Math.min(n,40);i++){ const a=P[i-1], b=P[i]; if(a&&b&&Math.hypot(a[0]-b[0],a[1]-b[1])<W*0.25){ x.moveTo(a[0],a[1]); x.lineTo(b[0],b[1]); } } x.stroke();
     P.forEach((p,i)=>{ if(!p) return; const s=S[i], tw=0.55+0.45*Math.sin(t*(1.5+18*vol)+s.ph), r=(i<6?3:1.4+s.m*1.5)*Math.min(1.6,0.8+p[2]*0.6);
       x.globalAlpha=tw; x.fillStyle=col; x.beginPath(); x.arc(p[0],p[1],r,0,Math.PI*2); x.fill();
       if(i<6){ x.globalAlpha=tw*0.25; x.beginPath(); x.arc(p[0],p[1],r*4,0,Math.PI*2); x.fill(); } });
-    x.globalAlpha=1;
+    x.globalAlpha=1; x.restore();
     const c=proj(VZ_SKY[k][0], VZ_SKY[k][1]+0.17); if(c && c[0]>20 && c[0]<W-20 && c[1]>14 && c[1]<H-20) vzLabel(x, c[0], c[1], k, K.f(k));
   });
   x.textAlign="right"; x.fillStyle="#5E7884"; x.font=VZ_FONT(9); x.fillText("TRASCINA PER GIRARE IL CIELO", W-10, H-10);
@@ -136,8 +136,8 @@ function vzFlow(x, W, H, t, dt, st){
   links.forEach(l=>{ const n=Math.round(l.h/5); while(VZ.fp.filter(p=>p.l===l.d.id).length<n) VZ.fp.push({ l:l.d.id, u:Math.random(), v:Math.random(), sp:0.18+Math.random()*0.12 }); });
   const bez=(a,b,c,d,u)=>{ const m=1-u; return m*m*m*a+3*m*m*u*b+3*m*u*u*c+u*u*u*d; };
   VZ.fp=VZ.fp.filter(p=>links.some(l=>l.d.id===p.l));
-  VZ.fp.forEach(p=>{ const l=links.find(z=>z.d.id===p.l); p.u+=p.sp*dt; if(p.u>1) p.u-=1; const u=p.u, X=bez(l.x0,l.mx,l.mx,l.x1,u), ya=bez(l.sy,l.sy,l.d.y,l.d.y,u), yb=bez(l.sy+l.h,l.sy+l.h,l.d.y+l.d.h,l.d.y+l.d.h,u);
-    x.fillStyle=l.d.col; x.globalAlpha=0.9; x.beginPath(); x.arc(X, ya+(yb-ya)*p.v, 1.6, 0, Math.PI*2); x.fill(); }); x.globalAlpha=1;
+  x.save(); x.globalCompositeOperation="lighter"; VZ.fp.forEach(p=>{ const l=links.find(z=>z.d.id===p.l); p.u+=p.sp*dt; if(p.u>1) p.u-=1; const u=p.u, X=bez(l.x0,l.mx,l.mx,l.x1,u), ya=bez(l.sy,l.sy,l.d.y,l.d.y,u), yb=bez(l.sy+l.h,l.sy+l.h,l.d.y+l.d.h,l.d.y+l.d.h,u);
+    x.fillStyle=l.d.col; x.globalAlpha=0.9; x.beginPath(); x.arc(X, ya+(yb-ya)*p.v, 1.8, 0, Math.PI*2); x.fill(); }); x.globalAlpha=1; x.restore();
   nodes.forEach(n=>{ x.fillStyle=n.col; x.fillRect(n.x,n.y,nw,n.h);
     const right=n.c<2, tx=right?n.x+nw+5:n.x+nw+5; x.textAlign="left"; x.fillStyle=n.col; x.font=VZ_FONT(10,700);
     if(n.c===0){ x.fillText(n.l.toUpperCase()+" "+m0(n.v), n.x, n.y-10); return; }
@@ -145,7 +145,51 @@ function vzFlow(x, W, H, t, dt, st){
     x.fillStyle="#D3E9F0"; x.font=VZ_FONT(10); x.fillText(m0(n.v), n.c===1?n.x-4-x.measureText(m0(n.v)).width:tx, ty+12); });
 }
 
+
+/* ---------- 🌐 la sfera: filamenti di luce su una sfera che gira (come i cruscotti dei trading bot) ----------
+   Ogni fondo ha filamenti in proporzione al suo peso (260 in tutto); più il fondo oscilla, più i suoi filamenti
+   vibrano e si staccano dalla superficie. Al centro il nucleo (il tuo patrimonio); trascini e la giri. */
+const VZ_FIL={};
+function vzFil(k){ if(VZ_FIL[k]) return VZ_FIL[k]; const r=vzRnd(k.charCodeAt(0)*131+k.charCodeAt(2)), L=[];
+  const n3=()=>{ let a=r()*2-1, b=r()*2-1, c=r()*2-1, d=Math.hypot(a,b,c)||1; return [a/d,b/d,c/d]; };
+  const C={ SWDA:[0.2,0.5,0.85], EIMI:[-0.8,0.3,0.5], AGGH:[0.6,-0.6,0.5], XEON:[-0.5,-0.7,-0.4] }[k];
+  for(let i=0;i<300;i++){ let u=n3(); u=[u[0]*0.75+C[0]*0.65, u[1]*0.75+C[1]*0.65, u[2]*0.75+C[2]*0.65]; const du=Math.hypot(...u); u=u.map(z=>z/du);
+    let w=n3(); const dot=w[0]*u[0]+w[1]*u[1]+w[2]*u[2]; w=[w[0]-dot*u[0], w[1]-dot*u[1], w[2]-dot*u[2]]; const dw=Math.hypot(...w)||1; w=w.map(z=>z/dw);
+    L.push({ u, w, a0:r()*6.283, len:0.5+r()*2.2, rs:0.82+r()*0.22, sd:r()*10, sp:0.5+r()*1.5 }); }
+  return VZ_FIL[k]=L; }
+function vzSphere(x, W, H, t, dt, st){
+  const K=vzKeys(st), grow=vzGrow(st), cx=W*0.56, cy=H*0.5, R=Math.min(W*0.34, H*0.38)*(0.75+0.25*grow);
+  const yaw=(VZ.yaw||0)+t*0.18, pit=0.35+(ST3.pitch||0), cyw=Math.cos(yaw), syw=Math.sin(yaw), cp=Math.cos(pit), sp=Math.sin(pit), F=R*3.2;
+  const P=(X,Y,Z)=>{ const x1=X*cyw+Z*syw, z1=-X*syw+Z*cyw, y1=Y*cp-z1*sp, z2=Y*sp+z1*cp, k=F/(F-z2*R); return [cx+x1*R*k, cy-y1*R*k, z2]; };
+  // alone e nucleo
+  const hg=x.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.35); hg.addColorStop(0,"rgba(140,124,255,.16)"); hg.addColorStop(0.6,"rgba(0,229,255,.05)"); hg.addColorStop(1,"rgba(0,229,255,0)"); x.fillStyle=hg; x.beginPath(); x.arc(cx,cy,R*1.35,0,Math.PI*2); x.fill();
+  x.save(); x.globalCompositeOperation="lighter"; x.lineWidth=0.7;
+  K.keys.forEach(k=>{ const n=Math.round(K.f(k)*260*Math.max(0.35,grow)*(VZ.q||1)), Fl=vzFil(k), col=ST_COL[k], vol=ST_VOL[k]||.1, jit=(0.02+vol*0.9)*(1+2.5*st.storm);
+    for(let i=0;i<n;i++){ const f=Fl[i]; x.strokeStyle=col; x.beginPath(); let za=0;
+      const SG=(VZ.q||1)<0.6?8:14; for(let s2=0;s2<=SG;s2++){ const a=f.a0+f.len*s2/SG+t*0.05*f.sp, rr=f.rs*(1+jit*Math.sin(a*5+f.sd+t*f.sp*(1+vol*20)));
+        const ca=Math.cos(a), sa=Math.sin(a), X=(ca*f.u[0]+sa*f.w[0])*rr, Y=(ca*f.u[1]+sa*f.w[1])*rr, Z=(ca*f.u[2]+sa*f.w[2])*rr, p=P(X,Y,Z); za+=p[2];
+        s2?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]); }
+      x.globalAlpha=0.10+0.22*(za/(SG+1)+1)/2; x.stroke(); }
+    // scintille: raggi che escono dalla superficie, lunghi quanto oscilla il fondo
+    const ns=Math.round(n*0.12); x.globalAlpha=0.55; for(let i=0;i<ns;i++){ const f=Fl[i], a=f.a0+t*0.05*f.sp, ca=Math.cos(a), sa=Math.sin(a), D=[ca*f.u[0]+sa*f.w[0], ca*f.u[1]+sa*f.w[1], ca*f.u[2]+sa*f.w[2]];
+      const L2=1+vol*2.2*(0.5+0.5*Math.sin(t*2+f.sd)), p1=P(D[0],D[1],D[2]), p2=P(D[0]*L2,D[1]*L2,D[2]*L2); x.beginPath(); x.moveTo(p1[0],p1[1]); x.lineTo(p2[0],p2[1]); x.stroke();
+      x.fillStyle=col; x.beginPath(); x.arc(p2[0],p2[1],1.1,0,Math.PI*2); x.fill(); } });
+  x.globalAlpha=1;
+  const ng=x.createRadialGradient(cx,cy,1,cx,cy,R*0.22); ng.addColorStop(0,"rgba(255,255,255,.9)"); ng.addColorStop(0.3,"rgba(0,229,255,.45)"); ng.addColorStop(1,"rgba(0,229,255,0)"); x.fillStyle=ng; x.beginPath(); x.arc(cx,cy,R*0.22,0,Math.PI*2); x.fill();
+  x.restore();
+  // mirino che gira e tacche in gradi
+  x.strokeStyle="rgba(0,229,255,.5)"; x.lineWidth=1; x.beginPath(); x.arc(cx,cy,R*1.12,t*0.3,t*0.3+1.1); x.stroke(); x.beginPath(); x.arc(cx,cy,R*1.12,t*0.3+Math.PI,t*0.3+Math.PI+1.1); x.stroke();
+  x.fillStyle="#5E7884"; x.font=VZ_FONT(8); x.textAlign="right"; [90,180,270].forEach((d,i)=>{ const yy=cy-R*0.34+i*R*0.66; x.fillText(String(d).padStart(3,"0")+" DEG", 52, yy); });
+  // legenda HUD in alto a sinistra
+  x.textAlign="left"; let ly=st.month!=null?112:16;
+  K.keys.slice().sort((a,b)=>K.f(b)-K.f(a)).forEach(k=>{ x.fillStyle=ST_COL[k]; x.fillRect(8,ly-8,2,10); x.font=VZ_FONT(10,700); x.fillText(`${shortName(ASSETS[k].t)} ${Math.round(K.f(k)*100)}%`, 14, ly); x.fillStyle="#5E7884"; x.font=VZ_FONT(8); x.fillText(ST_LAB[k].toUpperCase(), 14, ly+10); ly+=24; });
+  // riquadro «candidato» come nei cruscotti: il fondo più pesante
+  const top=K.keys.slice().sort((a,b)=>K.f(b)-K.f(a))[0]; if(top){ const tx=`NUCLEO ${shortName(ASSETS[top].t)} ${Math.round(K.f(top)*100)}% · ${ASSETS[top].k==="az"?"AZIONI":"DIFESA"} ${Math.round(K.keys.filter(k=>ASSETS[k].k==="az").reduce((a,k)=>a+K.f(k),0)*100)}%`;
+    x.font=VZ_FONT(8.5,700); const tw=x.measureText(tx).width+12, bx=W-tw-8, by=H-26; x.strokeStyle="#FFB020"; x.strokeRect(bx+0.5,by+0.5,tw,16); x.fillStyle="rgba(255,176,32,.08)"; x.fillRect(bx,by,tw,16); x.fillStyle="#FFB020"; x.fillText(tx, bx+6, by+11); }
+}
+
 Object.assign(VZ_MODES, {
+  sfera:{ e:"🌐", n:"La sfera", note:"filamenti = peso di ogni fondo · vibrano quanto oscilla · trascina per girarla", tm:true, draw:vzSphere },
   stelle:{ e:"✨", n:"La costellazione", note:"una stella = un punto di peso · brillano quanto oscillano · trascina per girare il cielo", tm:true, draw:vzSky },
   bolle:{ e:"🫧", n:"Le bolle", note:"bolla = un fondo con il suo logo · grande quanto il peso · spingile col dito", tm:true, draw:vzBubbles },
   citta:{ e:"🏙️", n:"La città", note:"quartiere = un fondo · alto quanto il peso · finestre che tremolano = quanto oscilla", tm:true, draw:vzCity },
