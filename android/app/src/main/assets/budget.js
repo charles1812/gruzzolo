@@ -1617,7 +1617,7 @@ function qzDone(){
   // piano
   if(typeof PL!=="undefined"){
     const sc=riskScore(qz.rq), p=qz.rq._p; const ans=Object.assign({}, qz.rq); delete ans._p;
-    PL.ans=ans; if(sc){ PL.prof=Math.min(p||sc.prof, sc.cap); PL.provisional=false; }
+    PL.ans=ans; if(sc && !PL.locked){ PL.prof=Math.min(p||sc.prof, sc.cap); PL.provisional=false; }   // strategia bloccata: il test salva le risposte (anche il limite dei liquidi) ma non la cambia
     PL.fund=r2(num(B.ans.cash)); plSave();
   }
   closeM("#qzScrim"); render(); renderBudget(); if(typeof renderPiano==="function") renderPiano();

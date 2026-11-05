@@ -895,7 +895,7 @@ document.addEventListener("click",e=>{
   if(a==="saveRq"){
     const sc=riskScore(rqDraft); if(!sc) return;
     PL.fund=num($("#rqFund").value);
-    PL.ans=Object.assign({}, rqDraft); PL.prof=sc.prof; rqDraft=null; mcMemo={}; plSave(); renderPiano(); if(typeof renderBudget==="function") renderBudget(); window.scrollTo(0,0); toast("Piano aggiornato");
+    PL.ans=Object.assign({}, rqDraft); if(!PL.locked) PL.prof=sc.prof; rqDraft=null; mcMemo={}; plSave(); renderPiano(); if(typeof renderBudget==="function") renderBudget(); window.scrollTo(0,0); toast("Piano aggiornato");
   }
   else if(a==="cancelRq"){ rqDraft=null; renderPiano(); }
   else if(a==="redo" || a==="goal"){ if(typeof openQuiz==="function") openQuiz("rischio"); else { rqDraft=Object.assign({}, PL.ans); renderPiano(); window.scrollTo(0,0); } }
