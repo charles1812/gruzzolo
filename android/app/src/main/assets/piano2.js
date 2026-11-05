@@ -52,7 +52,7 @@ function renderPiano(){
   const el=$("#planBody"); if(!el) return;
   if(typeof rqDraft!=="undefined" && rqDraft){ el.innerHTML=renderRiskQuiz(); return; }
   if(!PL.prof){ PL.prof=3; PL.provisional=true; plSave(); }
-  if(typeof DT!=="undefined" && !DT.es && !DT.busy && typeof dtLoad==="function" && !PL._dtTry){ PL._dtTry=1; dtLoad(false).then(()=>{ if(document.getElementById("page-piano").classList.contains("active")) renderPiano(); }); }
+  if(typeof DT!=="undefined" && !DT.es && !DT.busy && typeof dtLoad==="function" && !PL._dtTry){ PL._dtTry=1; dtLoad(false).then(()=>{ if(document.getElementById("page-portafoglio").classList.contains("active")) renderPiano(); }); }
   const R=pnReal(), M=pnM(R), lo=Math.floor(R.rc/10)*10, hi=Math.ceil(Math.max(R.base*2, R.rc+600)/50)*50;
   const IN=pnInfl(), inf=IN.r, v0=totals().val+((+PL.pot)||0);
   // niente cursore: il mese arriva dal Budget e dalla strategia; qui solo da dove arriva

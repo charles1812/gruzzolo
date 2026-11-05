@@ -139,11 +139,11 @@ function stLiveHtml(M, G, HZ, v0, inf){
   const riskF=st?Math.min(1,-st.mdd/0.55):ps.az/100;
   let h="";
   // 1. composizione: obiettivo contro oggi + rischio
-  if(typeof VZ!=="undefined" && VZ.tm && JSON.stringify(ST3.tgt)!==JSON.stringify(w)) VZ.tm=null;
-  ST3.tgt=Object.assign({}, w); ST3.M=M; ST3.now=tn>0?Object.fromEntries(ST_KEYS.map(k=>[k,(now[k]||0)/tn*100])):null; ST3.az=ps.az; setTimeout(st3dKick,0);
-  h+=`<div class="hud-panel" style="--i:1;margin-top:10px"><div class="hud-ph"><span class="t">${typeof vzTitle==="function"?vzTitle():"composizione // 3d"}</span><span class="tag">${typeof vzMode==="function"&&vzMode()!=="torta"?"si sceglie nelle impostazioni":"trascina per girare"}</span></div>
-      <canvas id="st3d" class="st-3d" aria-label="Composizione della strategia in 3D"></canvas>
-      <p class="st-3dn">${typeof vzNote==="function"?vzNote(tn):""}</p>${typeof vzChipsHtml==="function"?vzChipsHtml():""}<div class="st-tmrow" id="stTm">${typeof vzTmHtml==="function"?vzTmHtml():""}</div>
+  // il grafico in cima mostra il tuo portafoglio vero, o l'anteprima della strategia che stai guardando
+  const tg=(typeof vzTarget==="function")?vzTarget():Object.assign({}, w);
+  if(typeof VZ!=="undefined" && VZ.tm && JSON.stringify(ST3.tgt)!==JSON.stringify(tg)) VZ.tm=null;
+  ST3.tgt=tg; ST3.M=M; setTimeout(()=>{ if(typeof vzCapUpdate==="function") vzCapUpdate(); },0); ST3.now=tn>0?Object.fromEntries(ST_KEYS.map(k=>[k,(now[k]||0)/tn*100])):null; ST3.az=ps.az; setTimeout(st3dKick,0);
+  h+=`<div class="hud-panel" style="--i:1;margin-top:10px"><div class="hud-ph"><span class="t">composizione</span><span class="tag">obiettivo · oggi</span></div>
       <div class="st-leg">${ST_KEYS.filter(k=>(w[k]||0)>0||(now[k]||0)>0).map(k=>`<div><i style="background:${ST_COL[k]}"></i><span>${shortName(ASSETS[k].t)}</span><b class="num">${w[k]||0}%</b><small class="num">${tn>0?Math.round((now[k]||0)/tn*100)+"%":"—"}</small></div>`).join("")}</div></div>
     <div class="hud-panel st-riskp ${capQ?"acc-red":riskF>.6?"acc-amber":"acc-teal"}" style="--i:2;margin-top:10px"><div class="hud-ph"><span class="t">rischio</span></div>
       ${stGauge(riskF, stRisk(riskF), st?Math.round(st.mdd*100)+"%":"--", "calo peggiore")}
@@ -199,6 +199,7 @@ function pnRestHtml(R,M){
   const HZ=PL.hz||20;
   let h=stHtml(M, null, HZ, v0, inf);
   if(typeof rvHtml==="function") h+=rvHtml();
+  if(typeof ipoHtml==="function") h+=ipoHtml();
   h+=`<p class="pn-disc">Backtest con i rendimenti mensili veri dal 2004 (MSCI World, MSCI EM, obbligazioni globali coperte, tasso BCE). Previsioni ricampionando quegli anni con rendimenti futuri prudenti e la tua inflazione. Non sono previsioni certe né consulenza: la scelta è tua.</p>`;
   return h;
 }
@@ -294,5 +295,5 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden) st3dKick
    anche il serbatoio del Portafoglio e, se è aperto, il Piano */
 if(typeof renderBudget==="function"){ const _rb=renderBudget; renderBudget=function(){ const r=_rb.apply(this, arguments);
   try{ if(typeof mountPot==="function") mountPot();
-    const pg=document.getElementById("page-piano"); if(pg && pg.classList.contains("active") && typeof renderPiano==="function"){ const y=window.scrollY; renderPiano(); window.scrollTo(0,y); } }catch(e){}
+    const pg=document.getElementById("page-portafoglio"); if(pg && pg.classList.contains("active") && typeof renderPiano==="function"){ const y=window.scrollY; renderPiano(); window.scrollTo(0,y); } }catch(e){}
   return r; }; }

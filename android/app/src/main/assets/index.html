@@ -347,13 +347,14 @@
 
 <main class="page active" id="page-budget"><div id="budBody"></div></main>
 
-<main class="page" id="page-piano"><div id="planBody"></div></main>
+<main class="page" id="page-piano"></main>
 
 <main class="page" id="page-sfide"><div id="sfBody"></div></main>
 
 <main class="page" id="page-portafoglio">
 <section id="fzHost"></section>
 <section id="potHost"></section>
+<div id="planBody"></div>
 <section id="ideasHost"></section>
 <section id="scHost"></section>
 <section class="hero pf-hero">
@@ -512,7 +513,7 @@
 
     <div class="setgroup">
       <div class="gt">Grafica</div>
-      <label class="fld" style="margin:0"><span class="lab">Grafico della strategia nel Piano</span>
+      <label class="fld" style="margin:0"><span class="lab">Grafico del Portafoglio</span>
         <select id="sViz"><option value="vaso">🏺 Il vaso, con la macchina del tempo</option><option value="giardino">🌳 Il giardino, con la macchina del tempo</option><option value="torta">🍩 La torta 3D</option></select></label>
     </div>
 
@@ -610,7 +611,6 @@
   <button class="tab on" data-tab="budget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/><path d="M7 6V4h10v2"/></svg>Budget</button>
   <button class="tab" data-tab="portafoglio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/></svg>Portafoglio</button>
   <button class="tab tab-add" data-tab="add" aria-label="Aggiungi una spesa"><span>+</span></button>
-  <button class="tab" data-tab="piano"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><circle cx="21" cy="7" r="1.5" fill="currentColor" stroke="none"/><path d="M3 21h18"/></svg>Piano</button>
   <button class="tab more-tab" data-tab="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2M12 20v2M5 12a4 4 0 0 1 4-4h6a4 4 0 0 1 0 8H9a4 4 0 0 1-4-4Z"/><circle cx="9.5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="14.5" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>AI</button>
   <button class="tab more-tab" data-tab="stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>Statistica</button>
   <button class="tab more-tab" data-tab="predict" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>Predizione</button>
@@ -1386,6 +1386,8 @@ $("#saveReplay").addEventListener("click",async()=>{
 
 /* ---------- tabs ---------- */
 function showTab(name){
+  // il Piano adesso sta dentro il Portafoglio: «piano» porta lì, alla strategia
+  const toPlan = name==="piano"; if(toPlan) name="portafoglio";
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active", p.id==="page-"+name));
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.tab===name));
   if(name==="impostazioni") fillSettings();
@@ -1396,6 +1398,7 @@ function showTab(name){
   if(name==="budget" && typeof renderBudget==="function") renderBudget();
   if(name==="piano" && typeof renderPiano==="function") renderPiano();
   if(name==="portafoglio" && typeof fzLoop==="function") fzLoop();
+  if(name==="portafoglio" && typeof renderPiano==="function") renderPiano();
   // (Dati: la vista la sceglie dtView in dati.js)
   if(name==="impostazioni" && typeof renderModeSettings==="function") renderModeSettings();
   if(name==="portafoglio" && typeof renderPfChart==="function") renderPfChart(false);
@@ -1404,6 +1407,7 @@ function showTab(name){
   const nb=$("#newsBtn"); if(nb) nb.classList.toggle("on", name==="notizie");
   const alt=$("#moreBtn"); if(alt) alt.classList.toggle("on", ["ai","stat","predict","notizie","impostazioni"].includes(name));
   window.scrollTo(0,0);
+  if(toPlan) setTimeout(()=>{ const el=document.getElementById("stTool")||document.getElementById("planBody"); if(el) el.scrollIntoView({ block:"start" }); window.scrollBy(0,-70); },60);
 }
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>showTab(t.dataset.tab)));
 function applyAiVisibility(){
@@ -2223,6 +2227,7 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ refresh
 <script src="strategia-viz.js"></script>
 <script src="strategia-viz2.js"></script>
 <script src="revisione.js"></script>
+<script src="ipo.js"></script>
 <script src="sfide.js"></script>
 <script src="scopri.js"></script>
 <script src="updater.js"></script>

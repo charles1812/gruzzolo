@@ -285,3 +285,25 @@ main.page .st-in{border-radius:50% !important; background:var(--bg); border:2px 
 .rv-a span{display:flex; flex-direction:column; gap:2px}
 .rv-a small{color:#5E7884; font-size:10.5px}
 .rv-r{font-size:11.5px; color:#FFB020; margin:3px 0}
+/* grafico unico in cima al Portafoglio */
+.vz-top{margin:8px -4px 4px}
+.vz-cap{font:600 10px ui-monospace,Consolas,monospace; letter-spacing:1.5px; color:#00E5FF; margin:0 4px 6px}
+.vz-mean{margin:2px 4px 10px; font-size:11.5px}
+.vz-mean summary{cursor:pointer; color:#5E7884; font:600 10px ui-monospace,Consolas,monospace; letter-spacing:1px; text-transform:uppercase}
+.vz-mean ul{margin:6px 0 0; padding-left:16px; line-height:1.45; color:#D3E9F0}
+.vz-mean li{margin:3px 0}
+/* riserva IPO */
+.ipo-top{display:flex; gap:16px; align-items:center}
+.ipo-top>div{display:flex; flex-direction:column; gap:2px}
+.ipo-top b{font-size:16px}
+.ipo-pct{display:flex; gap:6px}
+.ipo-pct button{flex:1; height:30px; border:1px solid #17323D; background:rgba(9,17,26,.8); color:#D3E9F0; font:600 12px ui-monospace,Consolas,monospace; cursor:pointer}
+.ipo-pct button.on{border-color:#8C7CFF; color:#8C7CFF; box-shadow:0 0 8px rgba(140,124,255,.35)}
+.ipo-list{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+.ipo-c{border:1px solid #17323D; background:rgba(9,17,26,.7); display:flex; flex-direction:column}
+.ipo-c.on{border-color:#8C7CFF; box-shadow:inset 0 0 12px rgba(140,124,255,.15)}
+.ipo-c button{all:unset; cursor:pointer; padding:7px 8px; display:grid; grid-template-columns:auto 1fr; column-gap:6px}
+.ipo-c button span{grid-row:1/3; font-size:18px}
+.ipo-c button b{font-size:12px}
+.ipo-c button small{font-size:9.5px; color:#5E7884}
+.ipo-n{font:600 9.5px ui-monospace,Consolas,monospace; color:#8C7CFF; padding:0 8px 6px; text-decoration:none; letter-spacing:1px; text-transform:uppercase}

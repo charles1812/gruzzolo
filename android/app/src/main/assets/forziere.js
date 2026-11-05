@@ -25,11 +25,11 @@ function forziereHtml(){
   return `<div class="card fz">
     <div class="fz-top"><div class="fz-val"><small>Investimenti</small><b class="num">${money(t.val)}</b>
         <span class="num ${up?"pos":"neg"}">${up?"▲":"▼"} ${money(Math.abs(t.pl))} ${up?"+":"−"}${nf2.format(Math.abs(t.pct))}% <i>su ${m0(t.cost)} versati</i></span></div>
-      <div class="fz-seg" role="tablist">${["Adesso","10 anni","20 anni"].map((l,k)=>`<button data-fz="${k}" class="${FZ.mode===k?"on":""}">${l}</button>`).join("")}</div></div>
+      <div class="fz-seg" role="tablist" ${(typeof vzMode==="function"&&vzMode()!=="monete")?'style="display:none"':""}>${["Adesso","10 anni","20 anni"].map((l,k)=>`<button data-fz="${k}" class="${FZ.mode===k?"on":""}">${l}</button>`).join("")}</div></div>
     ${dl.has?`<div class="fz-ds">${ch("Oggi",dl.day,t.val-dl.day)}${ch("Settimana",dl.week,t.val-dl.week)}</div>`:""}
-    <div class="fz-head" id="fzHead"></div>
-    <div class="fz-stage"><canvas id="fzCanvas" aria-label="Le tue monete: una pila per ogni ETF. Tocca una pila per il suo grafico"></canvas><button class="fz-tree ${TREE.on?"on":""}" data-fztree aria-label="${TREE.on?"Nascondi":"Mostra"} l'albero" aria-pressed="${TREE.on}">🌳</button></div>
-    <div class="fz-cap" id="fzCap"></div>
+    <div class="fz-head" id="fzHead" ${(typeof vzMode==="function"&&vzMode()!=="monete")?'style="display:none"':""}></div>
+    ${(typeof vzMode!=="function"||vzMode()==="monete")?`<div class="fz-stage"><canvas id="fzCanvas" aria-label="Le tue monete: una pila per ogni ETF. Tocca una pila per il suo grafico"></canvas><button class="fz-tree ${TREE.on?"on":""}" data-fztree aria-label="${TREE.on?"Nascondi":"Mostra"} l'albero" aria-pressed="${TREE.on}">🌳</button></div>`:vzTopHtml()}
+    <div class="fz-cap" id="fzCap" ${(typeof vzMode==="function"&&vzMode()!=="monete")?'style="display:none"':""}></div>
     ${fzPosHtml(t)}
     ${lv.next?`<div class="fz-next"><div class="fz-nl"><span>Prossimo livello: <b>${lv.next[2]} ${lv.next[1]}</b></span><span class="num">${m0(t.val)} / ${m0(lv.next[0])}</span></div>
       <div class="fz-bar"><i style="width:${Math.min(100,lv.p*100).toFixed(1)}%"></i></div>
@@ -317,6 +317,7 @@ function fzCheckLevel(){
 /* portafoglio vuoto: da qui aggiungi le quote che hai già o quelle che compri adesso */
 function fzEmptyHtml(){
   return `<div class="card fz fz-empty"><div class="fz-val"><small>Il tuo portafoglio</small><b class="num">0 €</b><span>Nessuna posizione per ora.</span></div>
+    ${(typeof vzMode==="function"&&vzMode()!=="monete")?vzTopHtml():""}
     <p class="bnote">Hai già delle azioni o degli ETF, o li hai appena comprati? Aggiungili qui: il valore poi si aggiorna da solo. Se li compri adesso con i soldi del conto, contano come messi da parte questo mese.</p>
     <button class="btn gold" data-fzadd="1">＋ Aggiungi una posizione o un acquisto</button></div>`;
 }
@@ -364,7 +365,7 @@ function invMonth(){
   let G=0, done=0, first=false;
   // la parte che va sul conto (fondo emergenza, o primo mese se scegli di non investire) non è da investire
   try{ if(typeof B!=="undefined" && B.setup){ const st=bStatus(); first=!!st.P.partial; done=goalDone(st); G=first?st.P.saved+st.P.replayRes+st.P.save:Math.max(0,cyclePlan(st.cy.s).save);
-    let p=null; try{ p=PL.prof?planCompute():null; }catch(e){} if(p) G=Math.max(done, G-p.toFund); else if(first && (B.firstInv||{})[st.cy.key]!=="inv") G=done; } }catch(e){}
+    let p=null; try{ p=PL.prof?planCompute():null; }catch(e){} if(p) G=Math.max(done, G-p.toFund-(p.toIpo||0)); else if(first && (B.firstInv||{})[st.cy.key]!=="inv") G=done; } }catch(e){}
   // il Replay che deve ancora partire compra da solo: non è da comprare a mano
   let rcP=0; try{ if(!first && typeof replayPending==="function" && replayPending(bStatus())) rcP=replayCost().total; }catch(e){}
   const pot=Math.max(0,+PL.pot||0), left=Math.max(0,G-done-rcP);
@@ -384,19 +385,21 @@ function potHtml(){
   const key=st.cy.key, first=!!st.P.partial, ch=first?(B.firstInv||{})[key]:null, skip=!first && (B.invSkip||{})[key];
   const S=Math.max(0,p.S), fund=Math.max(0,first&&ch!=="inv"?S:p.toFund), inv=m.toInvest;
   // scomparto investimenti: obiettivo = quello che è già investito + quello che resta da investire; scomparto conto: lo segni tu
-  const invT=first&&ch!=="inv"?0:m.done+Math.max(0,m.left), fDone=(B.fundDone||{})[key]?fund:0, invD=Math.min(invT,m.done), tot=fund+invT, filled=fDone+invD;
+  const ipo=first&&ch!=="inv"?0:Math.max(0,p.toIpo||0), iDone=(B.ipoDone||{})[key]?ipo:0;
+  const invT=first&&ch!=="inv"?0:m.done+Math.max(0,m.left), fDone=(B.fundDone||{})[key]?fund:0, invD=Math.min(invT,m.done), tot=fund+invT+ipo, filled=fDone+invD+iDone;
   const col=(e,n,d,t,c1,c2)=>{ const f=t>0?Math.max(0,Math.min(1,d/t)):0;
     return `<div class="t4-col" style="--c1:${c1};--c2:${c2};--h:${(f*100).toFixed(1)}%;flex-grow:${Math.max(0.6,t/(tot||1)*2).toFixed(2)};cursor:default"><div class="fb-liq"><i class="fb-w1"></i><i class="fb-w2"></i><b class="fb-bub"></b><b class="fb-bub"></b><b class="fb-bub"></b></div>
       <span class="t4-v num">${m0(d)}<small> / ${m0(t)}</small></span><span class="t4-l"><span>${e}</span>${n}</span></div>`; };
   const todo=Math.max(0,tot-filled), dn=tot>0&&todo<1;
   let h=`<details class="pot-d" ${POT_OPEN?"open":""}><summary class="pot-n ${dn?"ok":""}"><span class="pot-i">${dn?"✅":"🏺"}</span>
       <span class="pot-t"><b>${dn?"Serbatoio del mese pieno":first&&!ch&&S>0?"Questo mese: investi o tieni sul conto?":`Da fare questo mese: ${m0(todo)}`}</b>
-        <small>🛟 ${m0(Math.max(0,fund-fDone))} sul conto · 📈 ${m0(Math.max(0,invT-invD))} in ETF${filled>=1?` · ✓ ${m0(filled)} già fatti`:""} · ${esc(PL.prof===6?"Su misura":PROFILES[PL.prof].n)}</small></span>
+        <small>🛟 ${m0(Math.max(0,fund-fDone))} sul conto · 📈 ${m0(Math.max(0,invT-invD))} in ETF${ipo>0?` · 🚀 ${m0(ipo-iDone)} IPO`:""}${filled>=1?` · ✓ ${m0(filled)} già fatti`:""} · ${esc(PL.prof===6?"Su misura":PROFILES[PL.prof].n)}</small></span>
       <span class="pot-p"><i style="width:${tot>0?Math.round(filled/tot*100):0}%"></i></span><span class="pot-c">▾</span></summary>
     <div class="card inv-card"><div class="t4-h"><small>Serbatoio del mese · strategia ${esc(PL.prof===6?"Su misura":PROFILES[PL.prof].n)}${PL.provisional?" (provvisoria)":""} <button class="add" data-b="goto" data-v="piano" style="font-size:11px">cambia ▸</button></small>
       <b class="num">${m0(filled)} <small style="font-size:.5em">di ${m0(tot)}</small></b>
       <span>da mettere da parte questo mese: 🛟 ${m0(fund)} sul conto + 📈 ${m0(invT)} da investire${m.pot>=1?` (con ${m0(m.pot)} dei mesi scorsi)`:""}</span></div>
-    ${tot>0?`<div class="t4-tank inv-tank">${col("🛟","Sul conto",fDone,fund,"#7fd6d0","#2f8f8a")}${invT>0?col("📈","Investimenti",invD,invT,"#f2cf82","#b8862f"):""}</div>`:""}
+    ${tot>0?`<div class="t4-tank inv-tank">${col("🛟","Sul conto",fDone,fund,"#7fd6d0","#2f8f8a")}${invT>0?col("📈","Investimenti",invD,invT,"#f2cf82","#b8862f"):""}${ipo>0?col("🚀","Riserva IPO",iDone,ipo,"#c9b8ff","#6f5ad0"):""}</div>`:""}
+    ${ipo>0?`<button class="add" data-pot="ipo" style="margin-top:8px">${iDone?"✓ Riserva IPO messa da parte · annulla":`🚀 Ho messo ${money(ipo)} nella riserva IPO`}</button>`:""}
     ${fund>0?`<button class="add" data-pot="fund" style="margin-top:8px">${fDone?"✓ Messi sul conto · annulla":`✅ Ho messo ${money(fund)} sul conto (fondo emergenza)`}</button>`:""}
     ${p.repTot>0&&!first?`<p class="bnote" style="margin:4px 0 0">Il Replay compra da solo ${money(p.repTot)} il giorno ${replay.dayOfMonth||1}: è già compreso.</p>`:""}
 `;
@@ -475,6 +478,9 @@ document.addEventListener("click",e=>{
     if(a==="edit"){ const v=prompt("Quanti soldi hai da parte da investire (€)?", String(+PL.pot||0).replace(".",",")); if(v==null) return; PL.pot=r2(Math.max(0,num(v))); plSave(); mountPot(); }
     else if(a==="add"){ const amt=+p.dataset.amt||0; PL.pot=r2((+PL.pot||0)+amt); plSave(); B.potAdd=B.potAdd||{}; B.potAdd[p.dataset.key]={ amt, date:ymd(today0()) }; bSave(); mountPot(); if(typeof renderBudget==="function") renderBudget(); toast("Aggiunti "+money(amt)+" da investire"); }
     else if(a==="buy") openInvest();
+    else if(a==="ipo"){ const k=cycleOf().key, I=PL.ipo||{}; B.ipoDone=B.ipoDone||{}; let pp=null; try{ pp=planCompute(); }catch(x){} const v=pp?(pp.toIpo||0):0;
+      if(B.ipoDone[k]){ I.saved=r2(Math.max(0,(+I.saved||0)-(+B.ipoDone[k]||v))); delete B.ipoDone[k]; } else { B.ipoDone[k]=v; I.saved=r2((+I.saved||0)+v); }
+      PL.ipo=I; plSave(); bSave(); mountPot(); if(typeof ipoMount==="function") ipoMount(); }
     else if(a==="fund"){ const k=cycleOf().key; B.fundDone=B.fundDone||{}; if(B.fundDone[k]) delete B.fundDone[k]; else B.fundDone[k]=ymd(today0()); bSave(); mountPot(); }
     return; }
   const b=e.target.closest("[data-inv]"); if(!b) return; const a=b.dataset.inv;

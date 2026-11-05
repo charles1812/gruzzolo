@@ -7,7 +7,9 @@
      pesi lontani dall'obiettivo, vendite solo se i versamenti di 12 mesi non bastano a rimettere in equilibrio
      (con le tasse del 26% sulla plusvalenza stimate), fondo emergenza, peso delle rate, coerenza con il test del rischio.
    Niente ordini veri: la proposta la applichi tu (pesi → strategia «Su misura»), compri e vendi tu dalla tua banca. */
-const RV_EVERY = 90;                      // giorni tra un controllo e l'altro
+const RV_EVERY = 90;
+/* istruzioni e lezioni dell'agente: assets/agente.json (le stesse delle prove in tools/agente_eval.py) */
+let AGENTE=null; fetch("agente.json").then(r=>r.json()).then(j=>{ AGENTE=j; }).catch(()=>{});                      // giorni tra un controllo e l'altro
 let RV_BUSY = false, RV_LOG = [];
 
 function rvKeyOf(h){ const k=Object.keys(ASSETS).find(x=>ASSETS[x].t===h.ticker); return k&&ST_KEYS.includes(k)?k:(k&&ASSETS[k]&&ASSETS[k].k==="ob"?"AGGH":"SWDA"); }
@@ -59,16 +61,18 @@ function rvAiRequest(){
     fondo_emergenza:p?{ oggi:Math.round(p.fund), obiettivo:Math.round(p.target), quota_del_risparmio_pct:Math.round(fundShare(PL.prof)*100) }:null,
     da_investire_questo_mese:(()=>{ try{ return Math.round(invMonth().toInvest); }catch(e){ return null; } })(),
     test_rischio:sc?{ profilo_suggerito:PROFILES[sc.prof].n, massimo:PROFILES[sc.cap].n }:"non fatto",
+    riserva_ipo:(PL.ipo&&PL.ipo.on)?{ quota_del_risparmio_pct:PL.ipo.pct, da_parte_eur:Math.round(PL.ipo.saved||0), aziende_seguite:(PL.ipo.watch||[]).map(id=>{ const c=(typeof IPO_LIST!=="undefined"?IPO_LIST:[]).find(x=>x.id===id); return c?c.n:id; }) }:"spenta",
     replay_automatico:(replay&&replay.enabled)?{ giorno:replay.dayOfMonth, costo_eur:Math.round(replayCost().total) }:null,
     profili_storico_2004_oggi:prof,
     controllo_integrato:b.findings.map(f=>f.t+": "+f.d),
   };
-  const system=`Sei il trader-analista di Gruzzolo: un quant prudente che lavora per un risparmiatore italiano (non consulente abilitato).
+  const system0=`Sei il trader-analista di Gruzzolo: un quant prudente che lavora per un risparmiatore italiano (non consulente abilitato).
 Controlli il suo portafoglio di ETF UCITS (iShares/Xtrackers su Borsa Italiana) e dici se la strategia va ancora bene e cosa fare questo mese.
 Regole: fondo emergenza prima di tutto; acquisti in quote intere verso i pesi; vendi solo se una voce si stacca di oltre 10 punti e i versamenti di 12 mesi non bastano, e indica le tasse (26% sulla plusvalenza); niente market timing né previsioni certe; considera rate dei prestiti e test del rischio; proponi pesi nuovi solo se c'è un motivo concreto, a passi di 5 e con somma 100, usando solo SWDA, EIMI, AGGH, XEON.
 Rispondi SOLO con un oggetto JSON valido, in italiano semplice, senza testo prima o dopo, con questa forma:
 {"sintesi":"max 3 frasi","voto":<1-10 quanto è sana la situazione>,"strategia":{"cambia":<true|false>,"pesi":{"SWDA":0,"EIMI":0,"AGGH":0,"XEON":0},"perche":"1-2 frasi"},"azioni":[{"tipo":"compra|vendi|tieni","ticker":"SWDA.MI","quote":<intero>,"motivo":"breve"}],"rischi":["max 3, brevi"],"prossimo_controllo_giorni":<30-180>}`;
-  return { system, user:"Dati del portafoglio e del mese (euro):\n"+JSON.stringify(data,null,1), builtin:b };
+  const A=AGENTE||{}, system=(A.system||system0)+((A.lezioni||[]).length?"\n\nLezioni imparate dalle prove (rispettale):\n"+A.lezioni.map((l,i)=>(i+1)+". "+l).join("\n"):"");
+  return { system, model:A.modello||"claude-sonnet-5-5", user:"Dati del portafoglio e del mese (euro):\n"+JSON.stringify(data,null,1), builtin:b };
 }
 function rvParse(text){ const a=text.indexOf("{"), z=text.lastIndexOf("}"); if(a<0||z<a) throw new Error("risposta senza JSON");
   const j=JSON.parse(text.slice(a,z+1)); const w=j.strategia&&j.strategia.pesi;
@@ -88,7 +92,7 @@ async function rvRun(){
     log("leggo portafoglio, Budget, prestiti e fondo emergenza","SYS");
     const hasK=!!(typeof settings!=="undefined" && settings.anthropicKey);
     if(hasK){ const q=rvAiRequest(); log("controllo integrato: "+q.builtin.findings.length+" note","SYS"); log("chiedo all'agente AI (Claude)…");
-      const txt=await aiComplete(q.user, q.system, "anthropic", "claude-sonnet-5-5", "veloce"); log("risposta ricevuta, la verifico");
+      const txt=await aiComplete(q.user, q.system, "anthropic", q.model, "equilibrato"); log("risposta ricevuta, la verifico");
       rvAiShow(txt, q.builtin); toast("Controllo fatto dall'agente AI"); }
     else { log("nessuna chiave AI: uso il sistema integrato","SYS"); rvSave(rvBuiltin()); toast("Controllo fatto"); }
   }catch(e){ log("errore: "+String(e.message||e).slice(0,120),"ERR"); try{ rvSave(rvBuiltin()); log("uso il sistema integrato al suo posto","SYS"); }catch(x){} }

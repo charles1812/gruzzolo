@@ -199,7 +199,9 @@ function planCompute(){
   // (nel primo mese il Replay è già fuori dai soldi da mettere da parte, quindi non lo sottraggo di nuovo)
   const rcM=(!firstM && replay && replay.enabled && (!ms.st || replayPending(ms.st))) ? replayCost().total : 0;
   if(rcM>0 && toFund>Math.max(0,S-rcM)){ toFund=Math.max(0,S-rcM); if(fund<target) why=`Il Replay (${m0(rcM)}) continua ogni mese; il resto del risparmio va al fondo emergenza finché non arriva a ${m0(fund<ess?ess:target)}.`; }
-  const inv=Math.max(0,S-toFund);
+  // riserva IPO (ipo.js): una parte di quello che resta dopo il fondo emergenza rimane liquida per le quotazioni
+  const toIpo=(PL.ipo && PL.ipo.on) ? Math.round(Math.max(0,S-toFund)*(PL.ipo.pct||5))/100 : 0;
+  const inv=Math.max(0,S-toFund-toIpo);
 
   // valori attuali per voce del modello; i titoli singoli e gli ETF fuori modello contano come azioni dei paesi sviluppati
   const keys=Object.keys(prof.w); const cur={}; keys.forEach(k=>cur[k]=0);
@@ -288,7 +290,7 @@ function planCompute(){
     const monthsFix=over.goal>0 ? need/perMonth : Infinity;
     if(monthsFix>12) rebal={ k:over.k, now:over.now, goal:over.goal, sell:Math.max(0,over.v-over.goal/100*totNow), monthsFix };
   }
-  return { firstM, satAmt, satBuys, satVal, satLeft, prof, ms, S, ess, months, target, fund, toFund, why, inv, rep, repTot, free, pot, buys, left:Math.max(0,left), skipped, missingPx, weights, conc, totNow, fee, rebal, ter:terV>0?terW/terV:null, terV };
+  return { toIpo, firstM, satAmt, satBuys, satVal, satLeft, prof, ms, S, ess, months, target, fund, toFund, why, inv, rep, repTot, free, pot, buys, left:Math.max(0,left), skipped, missingPx, weights, conc, totNow, fee, rebal, ter:terV>0?terW/terV:null, terV };
 }
 
 /* ---------- previsione: Monte Carlo a blocchi di 12 mesi sui rendimenti veri ---------- */

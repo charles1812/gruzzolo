@@ -13,13 +13,29 @@ const VZ_MODES = {
   vaso:{ e:"🏺", n:"Il vaso", note:"strato = peso · onde = quanto oscilla · gocce = versamenti", tm:true },
   giardino:{ e:"🌳", n:"Il giardino", note:"alberi = azioni · siepe = obbligazioni · stagno = liquidità · vento = quanto oscilla", tm:true },
   torta:{ e:"🍩", n:"La torta 3D", note:"fetta = peso · altezza = quanto oscilla · trascina per girare", tm:false },
+  monete:{ e:"🪙", n:"Le monete", note:"una moneta = una quota · una pila per ogni ETF · tocca una pila per il suo grafico", tm:false },
 };
+/* cosa vuol dire quello che vedi (per i modi che non lo dicono già nella nota) */
+const VZ_MEAN = {};
+/* il portafoglio vero, per voce del modello (i titoli fuori modello contano come azioni mondo, o obbligazioni) */
+function vzActual(){ const now={}; let tn=0; (holdings||[]).forEach(h=>{ const k=Object.keys(ASSETS).find(x=>ASSETS[x].t===h.ticker); const kk=k&&ST_KEYS.includes(k)?k:(k&&ASSETS[k]&&ASSETS[k].k==="ob"?"AGGH":"SWDA"); const v=Math.max(0,valueOf(h)); now[kk]=(now[kk]||0)+v; tn+=v; }); return { now, tn }; }
+/* cosa disegna il grafico in cima: il tuo portafoglio (se hai posizioni e guardi la tua strategia) o l'anteprima */
+function vzTarget(){ const A=vzActual(), mine=PL.provisional?null:PL.prof, q=(typeof STG!=="undefined"&&STG.q!=null)?STG.q:(PL.prof||3);
+  if(A.tn>0 && (q===mine || (mine==null && q===PL.prof))){ VZ.view={ kind:"mine", q, tn:A.tn, now:A.now }; return Object.fromEntries(ST_KEYS.map(k=>[k,(A.now[k]||0)/A.tn*100])); }
+  VZ.view={ kind:"preview", q, tn:A.tn }; return Object.assign({}, stW(q)); }
+function vzCapTxt(){ const v=VZ.view||{}, pn=v.q===6?"Su misura":((PROFILES[v.q]||{}).n||""); return v.kind==="mine"?`▍IL TUO PORTAFOGLIO · ${vzM0(v.tn)}`:`▍ANTEPRIMA · STRATEGIA ${pn.toUpperCase()}`; }
+function vzCapUpdate(){ const c=document.getElementById("vzCap"); if(c) c.textContent=vzCapTxt(); const n=document.getElementById("vzMean"); if(n) n.outerHTML=vzMeanHtml(); }
+function vzMeanHtml(){ const m=vzMode(), L=(VZ_MEAN[m]&&VZ_MEAN[m]())||VZ_MODES[m].note.split(" · ");
+  return `<details class="vz-mean" id="vzMean"><summary>${esc(VZ_MODES[m].e+" "+VZ_MODES[m].n)} · cosa vuol dire</summary><ul>${L.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>`; }
+function vzTopHtml(){ if(!ST3.tgt || !VZ.view) ST3.tgt=vzTarget(); setTimeout(st3dKick,0);
+  return `<div class="vz-top"><div class="vz-cap" id="vzCap">${esc(vzCapTxt())}</div><canvas id="st3d" class="st-3d" aria-label="Il tuo portafoglio in un grafico animato"></canvas>
+    ${vzMeanHtml()}${vzChipsHtml()}<div class="st-tmrow" id="stTm">${vzTmHtml()}</div></div>`; }
 function vzMode(){ const v=(typeof settings!=="undefined" && settings.stViz) || "sfera"; return VZ_MODES[v]?v:"vaso"; }
-function vzTitle(){ return "strategia // "+VZ_MODES[vzMode()].n.toLowerCase(); }
+function vzTitle(){ return "portafoglio // "+VZ_MODES[vzMode()].n.toLowerCase(); }
 function vzNote(tn){ return VZ_MODES[vzMode()].note; }
 function vzChipsHtml(){ const m=vzMode(); return `<div class="st-vz" role="tablist" aria-label="Come vedere la strategia">${Object.entries(VZ_MODES).map(([k,v])=>`<button class="${k===m?"on":""}" data-vz="${k}" title="${esc(v.n)}" aria-label="${esc(v.n)}">${v.e}</button>`).join("")}</div>`; }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-vz]"); if(!b) return; settings.stViz=b.dataset.vz; store.set("settings",settings); VZ.tm=null; VZ.drops=[]; VZ.rain=[]; VZ.leaves=[];
-  const s=document.getElementById("sViz"); if(s) s.value=settings.stViz; const y=window.scrollY; renderPiano(); window.scrollTo(0,y); });
+  const s=document.getElementById("sViz"); if(s) s.value=settings.stViz; const y=window.scrollY; if(typeof mountForziere==="function") mountForziere(); renderPiano(); window.scrollTo(0,y); });
 function vzTmHtml(){ if(!VZ_MODES[vzMode()].tm || typeof HIST==="undefined" || !HIST) return "";
   const on=VZ.tm && VZ.tm.on, done=VZ.tm && VZ.tm.done;
   return `<button class="hud-btn st-tm" data-st="tm" style="--c:var(--violet)">${on?"ferma":done?"rivedi dal "+HIST.months[0].slice(0,4):`macchina del tempo ${HIST.months[0].slice(0,4)} → oggi`}</button>`; }
@@ -47,7 +63,7 @@ function vzTmBtn(){ const b=document.getElementById("stTm"); if(b) b.innerHTML=v
 document.addEventListener("click",e=>{ const b=e.target.closest('[data-st="tm"]'); if(!b) return; e.stopImmediatePropagation();
   if(VZ.tm && VZ.tm.on){ VZ.tm.on=false; VZ.tm.done=true; vzTmBtn(); return; } vzTmStart(); }, true);
 document.addEventListener("change",e=>{ if(e.target.id!=="sViz") return; VZ.drops=[]; VZ.rain=[]; settings.stViz=e.target.value; store.set("settings",settings); VZ.tm=null;
-  if(typeof renderPiano==="function") renderPiano(); toast({ vaso:"Piano: il vaso", giardino:"Piano: il giardino", torta:"Piano: la torta 3D" }[settings.stViz]); });
+  if(typeof mountForziere==="function") mountForziere(); if(typeof renderPiano==="function") renderPiano(); toast("Grafico: "+(VZ_MODES[settings.stViz]||{n:""}).n); });
 (function(){ const s=document.getElementById("sViz"); if(s) s.value=vzMode(); })();
 
 /* numeri piccoli e casualità fissa (gli alberi restano uguali da un fotogramma all'altro) */
@@ -231,7 +247,7 @@ const VZ_FONT0=(s,w)=>`${w||600} ${s}px ui-monospace, Consolas, monospace`;
 /* il disegno: torta (com'era) oppure vaso / giardino */
 const vzTorta = st3dFrame;
 st3dFrame = function(t){
-  const m=vzMode(); if(m==="torta") return vzTorta(t);
+  const m=vzMode(); if(m==="monete"){ ST3.raf=0; return; } if(m==="torta") return vzTorta(t);
   ST3.raf=0; const c=document.getElementById("st3d"); if(!c || !ST3.tgt || document.hidden) return;
   const raw=ST3.last?(t-ST3.last):16, dt=Math.min(0.05,raw/1000); ST3.last=t; const ts=t/1000;
   // qualità che si adatta: se i fotogrammi sono lenti disegno meno filamenti e stelle (VZ.q da 0,25 a 1)
