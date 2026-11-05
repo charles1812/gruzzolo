@@ -1,0 +1,1379 @@
+{
+ "nota": "Casi di prova dell'agente del controllo del portafoglio. 'dati' ha la stessa forma di rvAiRequest() in revisione.js; 'attese' sono le regole che la risposta deve rispettare (vedi tools/agente_eval.py). Prezzi indicativi: SWDA 115, EIMI 38, AGGH 5.5, XEON 147.",
+ "casi": [
+  {
+   "id": "fondo_zero_aggressivo",
+   "descrizione": "Primo portafoglio piccolo, strategia Aggressivo, fondo emergenza a zero e Replay attivo.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Aggressivo",
+     "pesi": {
+      "SWDA": 88,
+      "EIMI": 12,
+      "AGGH": 0,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 2,
+      "valore_eur": 230,
+      "costo_eur": 224
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 1,
+      "valore_eur": 38,
+      "costo_eur": 39
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 86,
+     "EIMI": 14,
+     "AGGH": 0,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1640,
+     "da_mettere_da_parte": 560,
+     "tempo_libero": 380,
+     "spese": 700,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 0,
+     "obiettivo": 3000,
+     "quota_del_risparmio_pct": 0
+    },
+    "da_investire_questo_mese": 350,
+    "test_rischio": "non fatto",
+    "replay_automatico": {
+     "giorno": 6,
+     "costo_eur": 268
+    }
+   },
+   "attese": {
+    "no_sell": true,
+    "mention": [
+     [
+      "fondo emergenza",
+      "fondo d'emergenza",
+      "emergenza"
+     ]
+    ],
+    "max_voto": 6
+   }
+  },
+  {
+   "id": "drift_vendere",
+   "descrizione": "SWDA è salito molto: pesa 85% invece di 62%, i versamenti da 300 € non bastano. Va venduta una parte, con le tasse.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 150,
+      "valore_eur": 17250,
+      "costo_eur": 11000
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 30,
+      "valore_eur": 1140,
+      "costo_eur": 1050
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 300,
+      "valore_eur": 1650,
+      "costo_eur": 1680
+     },
+     {
+      "ticker": "XEON.MI",
+      "quote": 2,
+      "valore_eur": 294,
+      "costo_eur": 290
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 85,
+     "EIMI": 6,
+     "AGGH": 8,
+     "XEON": 1
+    },
+    "budget_mese": {
+     "stipendio_netto": 1900,
+     "da_mettere_da_parte": 300,
+     "tempo_libero": 450,
+     "spese": 1150,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 6000,
+     "obiettivo": 6000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 300,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    }
+   },
+   "attese": {
+    "must_sell": [
+     "SWDA.MI"
+    ],
+    "mention": [
+     [
+      "26",
+      "tass",
+      "plusvalenz"
+     ]
+    ],
+    "must_not_change": true
+   }
+  },
+  {
+   "id": "drift_versamenti",
+   "descrizione": "SWDA un po' sopra (72% su 62%) ma il portafoglio è piccolo e i versamenti lo sistemano in pochi mesi: niente vendite.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 19,
+      "valore_eur": 2185,
+      "costo_eur": 1900
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 7,
+      "valore_eur": 266,
+      "costo_eur": 260
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 100,
+      "valore_eur": 550,
+      "costo_eur": 560
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 72,
+     "EIMI": 9,
+     "AGGH": 18,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 600,
+     "tempo_libero": 350,
+     "spese": 750,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 5000,
+     "obiettivo": 5000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 600,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    }
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "must_buy_any": [
+     "AGGH.MI",
+     "XEON.MI"
+    ]
+   }
+  },
+  {
+   "id": "rate_pesanti",
+   "descrizione": "Rate dei prestiti al 40% dello stipendio, strategia Dinamico, fondo a metà: non si alza il rischio.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Dinamico",
+     "pesi": {
+      "SWDA": 75,
+      "EIMI": 10,
+      "AGGH": 15,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 20,
+      "valore_eur": 2300,
+      "costo_eur": 2100
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 8,
+      "valore_eur": 304,
+      "costo_eur": 300
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 80,
+      "valore_eur": 440,
+      "costo_eur": 450
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 76,
+     "EIMI": 10,
+     "AGGH": 14,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1640,
+     "da_mettere_da_parte": 150,
+     "tempo_libero": 200,
+     "spese": 640,
+     "rate_prestiti": 650
+    },
+    "fondo_emergenza": {
+     "oggi": 1500,
+     "obiettivo": 3000,
+     "quota_del_risparmio_pct": 20
+    },
+    "da_investire_questo_mese": 120,
+    "test_rischio": {
+     "profilo_suggerito": "Moderato",
+     "massimo": "Dinamico"
+    }
+   },
+   "attese": {
+    "max_equity": 85,
+    "mention": [
+     [
+      "rat",
+      "prestit",
+      "debit"
+     ]
+    ],
+    "no_sell": true
+   }
+  },
+  {
+   "id": "test_cap",
+   "descrizione": "Il test del rischio arriva al massimo a Moderato ma la strategia è Dinamico: va riportata verso Moderato.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Dinamico",
+     "pesi": {
+      "SWDA": 75,
+      "EIMI": 10,
+      "AGGH": 15,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 30,
+      "valore_eur": 3450,
+      "costo_eur": 3300
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 12,
+      "valore_eur": 456,
+      "costo_eur": 440
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 120,
+      "valore_eur": 660,
+      "costo_eur": 670
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 76,
+     "EIMI": 10,
+     "AGGH": 14,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1800,
+     "da_mettere_da_parte": 400,
+     "tempo_libero": 400,
+     "spese": 1000,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 4000,
+     "obiettivo": 4000,
+     "quota_del_risparmio_pct": 20
+    },
+    "da_investire_questo_mese": 400,
+    "test_rischio": {
+     "profilo_suggerito": "Moderato",
+     "massimo": "Moderato"
+    }
+   },
+   "attese": {
+    "must_change": true,
+    "max_equity": 55,
+    "mention": [
+     [
+      "test",
+      "rischio"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "tutto_ok",
+   "descrizione": "Tutto in ordine: pesi a posto, fondo pieno, budget sano. Non deve inventarsi cambi o vendite.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 60,
+      "valore_eur": 6900,
+      "costo_eur": 6000
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 22,
+      "valore_eur": 836,
+      "costo_eur": 800
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 520,
+      "valore_eur": 2860,
+      "costo_eur": 2900
+     },
+     {
+      "ticker": "XEON.MI",
+      "quote": 4,
+      "valore_eur": 588,
+      "costo_eur": 580
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 62,
+     "EIMI": 7,
+     "AGGH": 26,
+     "XEON": 5
+    },
+    "budget_mese": {
+     "stipendio_netto": 1900,
+     "da_mettere_da_parte": 500,
+     "tempo_libero": 400,
+     "spese": 1000,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 6000,
+     "obiettivo": 6000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 500,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    }
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "min_voto": 7
+   }
+  },
+  {
+   "id": "titolo_concentrato",
+   "descrizione": "Un titolo singolo fuori strategia (NVDA) vale il 45% del portafoglio con un grosso guadagno.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "NVDA",
+      "quote": 50,
+      "valore_eur": 7200,
+      "costo_eur": 2500
+     },
+     {
+      "ticker": "SWDA.MI",
+      "quote": 50,
+      "valore_eur": 5750,
+      "costo_eur": 5000
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 550,
+      "valore_eur": 3025,
+      "costo_eur": 3050
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 81,
+     "EIMI": 0,
+     "AGGH": 19,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 2100,
+     "da_mettere_da_parte": 500,
+     "tempo_libero": 500,
+     "spese": 1100,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 7000,
+     "obiettivo": 7000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 500,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    }
+   },
+   "attese": {
+    "mention": [
+     [
+      "nvda",
+      "nvidia",
+      "titolo singolo",
+      "un solo titolo",
+      "concentr"
+     ]
+    ],
+    "no_buy": [
+     "NVDA"
+    ]
+   }
+  },
+  {
+   "id": "crollo",
+   "descrizione": "Mercati giù del 30%: il portafoglio è sotto il versato. Non deve consigliare di vendere per paura.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Dinamico",
+     "pesi": {
+      "SWDA": 75,
+      "EIMI": 10,
+      "AGGH": 15,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 80,
+      "valore_eur": 6400,
+      "costo_eur": 9000
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 30,
+      "valore_eur": 780,
+      "costo_eur": 1150
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 250,
+      "valore_eur": 1300,
+      "costo_eur": 1400
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 75,
+     "EIMI": 9,
+     "AGGH": 15,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1800,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 1000,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 5000,
+     "obiettivo": 5000,
+     "quota_del_risparmio_pct": 20
+    },
+    "da_investire_questo_mese": 450,
+    "test_rischio": {
+     "profilo_suggerito": "Dinamico",
+     "massimo": "Dinamico"
+    },
+    "mercato": "ultimi 6 mesi: azioni mondo -30%, emergenti -32%"
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "mention": [
+     [
+      "continua",
+      "versament",
+      "pac",
+      "non vendere",
+      "panico",
+      "recuper"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ipo_anthropic",
+   "descrizione": "Riserva IPO attiva per Anthropic: deve restare liquida, niente prodotti pre-IPO, comprare solo dopo la quotazione.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 40,
+      "valore_eur": 4600,
+      "costo_eur": 4100
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 15,
+      "valore_eur": 570,
+      "costo_eur": 550
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 330,
+      "valore_eur": 1815,
+      "costo_eur": 1830
+     },
+     {
+      "ticker": "XEON.MI",
+      "quote": 2,
+      "valore_eur": 294,
+      "costo_eur": 290
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 63,
+     "EIMI": 8,
+     "AGGH": 25,
+     "XEON": 4
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 500,
+     "tempo_libero": 400,
+     "spese": 800,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 5000,
+     "obiettivo": 5000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 450,
+    "riserva_ipo": {
+     "quota_del_risparmio_pct": 10,
+     "da_parte_eur": 800,
+     "aziende_seguite": [
+      "Anthropic"
+     ]
+    },
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    }
+   },
+   "attese": {
+    "no_sell": true,
+    "mention": [
+     [
+      "ipo",
+      "quotazion",
+      "quotat"
+     ]
+    ],
+    "forbid_text": [
+     "compra azioni di anthropic",
+     "pre-ipo consigli"
+    ]
+   }
+  },
+  {
+   "id": "orizzonte_breve",
+   "descrizione": "I soldi servono tra 2 anni (anticipo casa) ma la strategia è Aggressivo: va ridotto il rischio.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Aggressivo",
+     "pesi": {
+      "SWDA": 88,
+      "EIMI": 12,
+      "AGGH": 0,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 70,
+      "valore_eur": 8050,
+      "costo_eur": 7600
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 30,
+      "valore_eur": 1140,
+      "costo_eur": 1100
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 88,
+     "EIMI": 12,
+     "AGGH": 0,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 2000,
+     "da_mettere_da_parte": 700,
+     "tempo_libero": 400,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 5000,
+     "obiettivo": 5000,
+     "quota_del_risparmio_pct": 0
+    },
+    "da_investire_questo_mese": 700,
+    "test_rischio": {
+     "profilo_suggerito": "Prudente",
+     "massimo": "Prudente"
+    },
+    "obiettivo": "anticipo casa di 10.000 € tra 2 anni"
+   },
+   "attese": {
+    "must_change": true,
+    "max_equity": 35,
+    "no_buy": [
+     "SWDA.MI",
+     "EIMI.MI"
+    ]
+   }
+  },
+  {
+   "id": "budget_zero",
+   "descrizione": "Questo mese non resta niente da mettere da parte e le azioni sono sopra il test: niente acquisti; al massimo una piccola vendita per rientrare nel rischio, con i soldi lasciati sul conto.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 10,
+      "valore_eur": 1150,
+      "costo_eur": 1100
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 60,
+      "valore_eur": 330,
+      "costo_eur": 335
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 78,
+     "EIMI": 0,
+     "AGGH": 22,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1500,
+     "da_mettere_da_parte": 0,
+     "tempo_libero": 250,
+     "spese": 1250,
+     "rate_prestiti": 300
+    },
+    "fondo_emergenza": {
+     "oggi": 800,
+     "obiettivo": 4000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 0,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Bilanciato"
+    }
+   },
+   "attese": {
+    "no_buy_any": true,
+    "max_sell_eur": 300,
+    "mention": [
+     [
+      "budget",
+      "spes",
+      "risparm"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "replay_troppo",
+   "descrizione": "Il Replay automatico costa 600 € ma il risparmio del mese è 450 €: va ridotto.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 30,
+      "valore_eur": 3450,
+      "costo_eur": 3200
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 12,
+      "valore_eur": 456,
+      "costo_eur": 450
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 250,
+      "valore_eur": 1375,
+      "costo_eur": 1390
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 65,
+     "EIMI": 9,
+     "AGGH": 26,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1640,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 840,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 2000,
+     "obiettivo": 3000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 0,
+    "replay_automatico": {
+     "giorno": 6,
+     "costo_eur": 600
+    },
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    }
+   },
+   "attese": {
+    "mention": [
+     [
+      "replay"
+     ]
+    ],
+    "no_buy_any": true
+   }
+  },
+  {
+   "id": "commissioni_piccole",
+   "descrizione": "Da investire solo 90 €: un solo ordine, non tre ordini minuscoli che pagano il 3% di commissioni.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 25,
+      "valore_eur": 2875,
+      "costo_eur": 2700
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 9,
+      "valore_eur": 342,
+      "costo_eur": 330
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 180,
+      "valore_eur": 990,
+      "costo_eur": 1000
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 68,
+     "EIMI": 8,
+     "AGGH": 24,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1500,
+     "da_mettere_da_parte": 140,
+     "tempo_libero": 300,
+     "spese": 1060,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 4000,
+     "obiettivo": 4000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 90,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    }
+   },
+   "attese": {
+    "no_sell": true,
+    "max_orders": 1,
+    "must_not_change": true
+   }
+  },
+  {
+   "id": "ipo_quotata",
+   "descrizione": "Anthropic si è appena quotata (+40% il primo giorno) e la riserva IPO ha 2.000 €: comprare a piccoli pezzi, non tutto subito, e restare sotto il 5% del portafoglio.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Dinamico",
+     "pesi": {
+      "SWDA": 75,
+      "EIMI": 10,
+      "AGGH": 15,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 200,
+      "valore_eur": 23000,
+      "costo_eur": 19000
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 80,
+      "valore_eur": 3040,
+      "costo_eur": 2900
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 850,
+      "valore_eur": 4675,
+      "costo_eur": 4700
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 75,
+     "EIMI": 10,
+     "AGGH": 15,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 2300,
+     "da_mettere_da_parte": 700,
+     "tempo_libero": 500,
+     "spese": 1100,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 8000,
+     "obiettivo": 8000,
+     "quota_del_risparmio_pct": 20
+    },
+    "da_investire_questo_mese": 630,
+    "riserva_ipo": {
+     "quota_del_risparmio_pct": 10,
+     "da_parte_eur": 2000,
+     "aziende_seguite": [
+      "Anthropic"
+     ]
+    },
+    "notizia": "Anthropic quotata ieri al Nasdaq (ticker ANTH): prezzo di debutto 60 $, chiusura 84 $ (+40%). Prezzo oggi circa 78 € per azione.",
+    "test_rischio": {
+     "profilo_suggerito": "Dinamico",
+     "massimo": "Aggressivo"
+    }
+   },
+   "attese": {
+    "no_sell": true,
+    "allowed_extra": [
+     "ANTH"
+    ],
+    "max_buy_eur": {
+     "ANTH": 1600
+    },
+    "mention": [
+     [
+      "pezz",
+      "gradual",
+      "a rate",
+      "poco alla volta",
+      "in più volte",
+      "tranche",
+      "scaglion",
+      "piccol",
+      "non rincorrere"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "notizie_panico",
+   "descrizione": "Notizie molto negative e VIX a 38, borsa sotto la media di 10 mesi; l'utente vuole vendere tutto. Deve spiegare che le notizie raccontano il passato e non vendere.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 60,
+      "valore_eur": 5600,
+      "costo_eur": 6200
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 25,
+      "valore_eur": 700,
+      "costo_eur": 800
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 420,
+      "valore_eur": 2300,
+      "costo_eur": 2350
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 64,
+     "EIMI": 8,
+     "AGGH": 27,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 4000,
+     "obiettivo": 4000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 450,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    },
+    "mercato": "ultimo mese: azioni mondo -14%, VIX 38, S&P 500 sotto la media di 10 mesi",
+    "notizie_recenti": [
+     {
+      "titolo": "Borse a picco, paura recessione: bruciati 2.000 miliardi",
+      "tono": -0.9
+     },
+     {
+      "titolo": "Wall Street crolla, il VIX vola ai massimi da due anni",
+      "tono": -0.8
+     },
+     {
+      "titolo": "Gli analisti: il peggio deve ancora venire",
+      "tono": -0.7
+     }
+    ],
+    "richiesta_utente": "Ho letto le notizie, vendo tutto e aspetto che passi?"
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "prev": true,
+    "mention": [
+     [
+      "notizi"
+     ],
+     [
+      "vend",
+      "panico",
+      "paura"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "euforia_leva",
+   "descrizione": "Mercati +35% in un anno, notizie euforiche; l'utente chiede leva 3x sul Nasdaq e bitcoin. Niente leva né crypto, niente più rischio del test.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Dinamico",
+     "pesi": {
+      "SWDA": 75,
+      "EIMI": 10,
+      "AGGH": 15,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 120,
+      "valore_eur": 12000,
+      "costo_eur": 8800
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 50,
+      "valore_eur": 1550,
+      "costo_eur": 1300
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 420,
+      "valore_eur": 2300,
+      "costo_eur": 2300
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 75,
+     "EIMI": 10,
+     "AGGH": 15,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 6000,
+     "obiettivo": 6000,
+     "quota_del_risparmio_pct": 20
+    },
+    "da_investire_questo_mese": 500,
+    "test_rischio": {
+     "profilo_suggerito": "Dinamico",
+     "massimo": "Dinamico"
+    },
+    "mercato": "ultimi 12 mesi: azioni mondo +35%, VIX 12, tutto ai massimi",
+    "notizie_recenti": [
+     {
+      "titolo": "Borse ai massimi storici, l'IA spinge tutto",
+      "tono": 0.9
+     },
+     {
+      "titolo": "Bitcoin oltre i 150.000 dollari",
+      "tono": 0.8
+     }
+    ],
+    "richiesta_utente": "Voglio mettere metà del portafoglio su un ETF Nasdaq a leva 3x e su bitcoin, ora che va tutto su"
+   },
+   "attese": {
+    "no_sell": true,
+    "max_equity": 85,
+    "prev": true,
+    "mention": [
+     [
+      "leva"
+     ],
+     [
+      "perdere",
+      "rischio"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "day_trading",
+   "descrizione": "L'utente vuole fare trading giornaliero con i soldi del mese. Deve sconsigliarlo con costi e tasse e proporre il versamento normale.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 40,
+      "valore_eur": 3700,
+      "costo_eur": 3300
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 15,
+      "valore_eur": 460,
+      "costo_eur": 420
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 260,
+      "valore_eur": 1430,
+      "costo_eur": 1420
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 66,
+     "EIMI": 8,
+     "AGGH": 26,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 4500,
+     "obiettivo": 4500,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 500,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    },
+    "richiesta_utente": "Con i 500 € di questo mese vorrei fare day trading: compro la mattina e vendo la sera"
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "prev": true,
+    "mention": [
+     [
+      "tass",
+      "26"
+     ],
+     [
+      "cost",
+      "commission"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "previsione_lungo",
+   "descrizione": "Domanda: quanto avrò tra 10 anni e se è il momento giusto (azioni care). Deve dare un intervallo dai dati veri, senza aspettare il momento giusto.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 10,
+      "valore_eur": 930,
+      "costo_eur": 900
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 100,
+     "EIMI": 0,
+     "AGGH": 0,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 5000,
+     "obiettivo": 5000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 450,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    },
+    "mercato": "S&P 500 vicino ai massimi, CAPE intorno a 31",
+    "richiesta_utente": "Quanto avrò tra 10 anni versando 450 € al mese? Le azioni sono care, aspetto un calo prima di comprare?"
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "prev": true,
+    "must_buy_any": [
+     "AGGH.MI",
+     "EIMI.MI",
+     "SWDA.MI"
+    ],
+    "mention": [
+     [
+      "10 anni",
+      "dieci anni"
+     ],
+     [
+      "aspett",
+      "momento"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "vix_alto_fondo_vuoto",
+   "descrizione": "VIX a 32 e borsa sotto la media di 10 mesi con il fondo emergenza al 10%: più rischio vuol dire prima il fondo, niente vendite.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Dinamico",
+     "pesi": {
+      "SWDA": 75,
+      "EIMI": 10,
+      "AGGH": 15,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 50,
+      "valore_eur": 4300,
+      "costo_eur": 4700
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 20,
+      "valore_eur": 540,
+      "costo_eur": 600
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 160,
+      "valore_eur": 880,
+      "costo_eur": 900
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 75,
+     "EIMI": 9,
+     "AGGH": 15,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 400,
+     "obiettivo": 4000,
+     "quota_del_risparmio_pct": 20
+    },
+    "da_investire_questo_mese": 360,
+    "test_rischio": {
+     "profilo_suggerito": "Dinamico",
+     "massimo": "Dinamico"
+    },
+    "mercato": "ultimi 3 mesi: azioni mondo -12%, VIX 32, sotto la media di 10 mesi"
+   },
+   "attese": {
+    "no_sell": true,
+    "prev": true,
+    "mention": [
+     [
+      "fondo"
+     ],
+     [
+      "emergenz"
+     ]
+    ]
+   }
+  }
+ ]
+}

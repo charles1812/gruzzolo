@@ -363,3 +363,7 @@ main.page .st-in{border-radius:50% !important; background:var(--bg); border:2px 
 .ai-cl > div{display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:baseline; font-size:12px; padding:3px 0; border-top:1px dashed rgba(94,120,132,.25)}
 .ai-cl > div > span:first-child{color:#5E7884; font-size:11px; white-space:nowrap}
 .ai-cl small{display:block; color:#5E7884; font-size:10.5px}
+/* previsioni nel controllo */
+.prv-r{display:grid; grid-template-columns:78px 1fr; gap:8px; padding:6px 0; border-top:1px solid #0E222B; font-size:12px; line-height:1.45}
+.prv-r b{font:600 10px ui-monospace,Consolas,monospace; letter-spacing:1px; text-transform:uppercase; color:#8C7CFF; padding-top:2px}
+.prv-r span{color:#D3E9F0}

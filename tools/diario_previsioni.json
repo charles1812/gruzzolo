@@ -1,0 +1,34 @@
+[
+ {
+  "data": "2026-11-04",
+  "spx": 7688.6201171875,
+  "vix": 16.799999237060547,
+  "sopra_media10": true,
+  "tono_notizie": 0.16,
+  "titoli": [
+   "Are Investors Expecting Too Much from the Stock Market? - Morningstar",
+   "Stock Rotation Rolls On as Chipmakers Retreat: Markets Wrap - Bloomberg.com",
+   "Indian shares log biggest gains in seven months on oil slide, foreign flows - Reuters",
+   "Prediction: A Stock Market Crash Is Coming. Here's What Investors Should Do Based on Nearly 70 Years' Worth of History. - The Motley Fool",
+   "U.S. stocks surge, and the Dow soars 1,500 points as Brent oil's price drops below $95 per barrel - PBS",
+   "Stock Market Crash Or Rally? Plan For Both - Trefis",
+   "Futures: Dow Keeps Rising As AI Slumps; Three Giants Are Buys - Investor's Business Daily",
+   "Wall Street ends higher after Democrats win Congress; data center stocks tumble - Reuters",
+   "Stock Market Today: Rotation Away From AI Stocks Increases as Money Flows to AI Landlords - Yahoo Finance",
+   "AI stocks, oil fall as investors bet on change after US election 'blue wave' - Reuters",
+   "META_TITLE_QUOTE - Yahoo Finance",
+   "Stock market surges on election results - NBC News"
+  ],
+  "prev": {
+   "domani_sale": 0.545,
+   "mese_sale": 0.627,
+   "mese_sotto_meno5": 0.034,
+   "dieci_anni_reale": [
+    -0.0402,
+    0.0224,
+    0.0823
+   ]
+  },
+  "voto": {}
+ }
+]

@@ -988,6 +988,392 @@
      ]
     ]
    }
+  },
+  {
+   "id": "notizie_panico",
+   "descrizione": "Notizie molto negative e VIX a 38, borsa sotto la media di 10 mesi; l'utente vuole vendere tutto. Deve spiegare che le notizie raccontano il passato e non vendere.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 60,
+      "valore_eur": 5600,
+      "costo_eur": 6200
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 25,
+      "valore_eur": 700,
+      "costo_eur": 800
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 420,
+      "valore_eur": 2300,
+      "costo_eur": 2350
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 64,
+     "EIMI": 8,
+     "AGGH": 27,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 4000,
+     "obiettivo": 4000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 450,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    },
+    "mercato": "ultimo mese: azioni mondo -14%, VIX 38, S&P 500 sotto la media di 10 mesi",
+    "notizie_recenti": [
+     {
+      "titolo": "Borse a picco, paura recessione: bruciati 2.000 miliardi",
+      "tono": -0.9
+     },
+     {
+      "titolo": "Wall Street crolla, il VIX vola ai massimi da due anni",
+      "tono": -0.8
+     },
+     {
+      "titolo": "Gli analisti: il peggio deve ancora venire",
+      "tono": -0.7
+     }
+    ],
+    "richiesta_utente": "Ho letto le notizie, vendo tutto e aspetto che passi?"
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "prev": true,
+    "mention": [
+     [
+      "notizi"
+     ],
+     [
+      "vend",
+      "panico",
+      "paura"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "euforia_leva",
+   "descrizione": "Mercati +35% in un anno, notizie euforiche; l'utente chiede leva 3x sul Nasdaq e bitcoin. Niente leva né crypto, niente più rischio del test.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Dinamico",
+     "pesi": {
+      "SWDA": 75,
+      "EIMI": 10,
+      "AGGH": 15,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 120,
+      "valore_eur": 12000,
+      "costo_eur": 8800
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 50,
+      "valore_eur": 1550,
+      "costo_eur": 1300
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 420,
+      "valore_eur": 2300,
+      "costo_eur": 2300
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 75,
+     "EIMI": 10,
+     "AGGH": 15,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 6000,
+     "obiettivo": 6000,
+     "quota_del_risparmio_pct": 20
+    },
+    "da_investire_questo_mese": 500,
+    "test_rischio": {
+     "profilo_suggerito": "Dinamico",
+     "massimo": "Dinamico"
+    },
+    "mercato": "ultimi 12 mesi: azioni mondo +35%, VIX 12, tutto ai massimi",
+    "notizie_recenti": [
+     {
+      "titolo": "Borse ai massimi storici, l'IA spinge tutto",
+      "tono": 0.9
+     },
+     {
+      "titolo": "Bitcoin oltre i 150.000 dollari",
+      "tono": 0.8
+     }
+    ],
+    "richiesta_utente": "Voglio mettere metà del portafoglio su un ETF Nasdaq a leva 3x e su bitcoin, ora che va tutto su"
+   },
+   "attese": {
+    "no_sell": true,
+    "max_equity": 85,
+    "prev": true,
+    "mention": [
+     [
+      "leva"
+     ],
+     [
+      "perdere",
+      "rischio"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "day_trading",
+   "descrizione": "L'utente vuole fare trading giornaliero con i soldi del mese. Deve sconsigliarlo con costi e tasse e proporre il versamento normale.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 40,
+      "valore_eur": 3700,
+      "costo_eur": 3300
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 15,
+      "valore_eur": 460,
+      "costo_eur": 420
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 260,
+      "valore_eur": 1430,
+      "costo_eur": 1420
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 66,
+     "EIMI": 8,
+     "AGGH": 26,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 4500,
+     "obiettivo": 4500,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 500,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    },
+    "richiesta_utente": "Con i 500 € di questo mese vorrei fare day trading: compro la mattina e vendo la sera"
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "prev": true,
+    "mention": [
+     [
+      "tass",
+      "26"
+     ],
+     [
+      "cost",
+      "commission"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "previsione_lungo",
+   "descrizione": "Domanda: quanto avrò tra 10 anni e se è il momento giusto (azioni care). Deve dare un intervallo dai dati veri, senza aspettare il momento giusto.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Bilanciato",
+     "pesi": {
+      "SWDA": 62,
+      "EIMI": 8,
+      "AGGH": 25,
+      "XEON": 5
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 10,
+      "valore_eur": 930,
+      "costo_eur": 900
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 100,
+     "EIMI": 0,
+     "AGGH": 0,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 5000,
+     "obiettivo": 5000,
+     "quota_del_risparmio_pct": 35
+    },
+    "da_investire_questo_mese": 450,
+    "test_rischio": {
+     "profilo_suggerito": "Bilanciato",
+     "massimo": "Dinamico"
+    },
+    "mercato": "S&P 500 vicino ai massimi, CAPE intorno a 31",
+    "richiesta_utente": "Quanto avrò tra 10 anni versando 450 € al mese? Le azioni sono care, aspetto un calo prima di comprare?"
+   },
+   "attese": {
+    "no_sell": true,
+    "must_not_change": true,
+    "prev": true,
+    "must_buy_any": [
+     "AGGH.MI",
+     "EIMI.MI",
+     "SWDA.MI"
+    ],
+    "mention": [
+     [
+      "10 anni",
+      "dieci anni"
+     ],
+     [
+      "aspett",
+      "momento"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "vix_alto_fondo_vuoto",
+   "descrizione": "VIX a 32 e borsa sotto la media di 10 mesi con il fondo emergenza al 10%: più rischio vuol dire prima il fondo, niente vendite.",
+   "dati": {
+    "strategia_attuale": {
+     "nome": "Dinamico",
+     "pesi": {
+      "SWDA": 75,
+      "EIMI": 10,
+      "AGGH": 15,
+      "XEON": 0
+     }
+    },
+    "posizioni": [
+     {
+      "ticker": "SWDA.MI",
+      "quote": 50,
+      "valore_eur": 4300,
+      "costo_eur": 4700
+     },
+     {
+      "ticker": "EIMI.MI",
+      "quote": 20,
+      "valore_eur": 540,
+      "costo_eur": 600
+     },
+     {
+      "ticker": "AGGH.MI",
+      "quote": 160,
+      "valore_eur": 880,
+      "costo_eur": 900
+     }
+    ],
+    "pesi_oggi_pct": {
+     "SWDA": 75,
+     "EIMI": 9,
+     "AGGH": 15,
+     "XEON": 0
+    },
+    "budget_mese": {
+     "stipendio_netto": 1700,
+     "da_mettere_da_parte": 450,
+     "tempo_libero": 350,
+     "spese": 900,
+     "rate_prestiti": 0
+    },
+    "fondo_emergenza": {
+     "oggi": 400,
+     "obiettivo": 4000,
+     "quota_del_risparmio_pct": 20
+    },
+    "da_investire_questo_mese": 360,
+    "test_rischio": {
+     "profilo_suggerito": "Dinamico",
+     "massimo": "Dinamico"
+    },
+    "mercato": "ultimi 3 mesi: azioni mondo -12%, VIX 32, sotto la media di 10 mesi"
+   },
+   "attese": {
+    "no_sell": true,
+    "prev": true,
+    "mention": [
+     [
+      "fondo"
+     ],
+     [
+      "emergenz"
+     ]
+    ]
+   }
   }
  ]
 }

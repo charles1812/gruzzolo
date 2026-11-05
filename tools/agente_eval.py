@@ -1,6 +1,8 @@
 """Allenamento dell'agente del controllo del portafoglio: lo mette alla prova su casi difficili e dà un punteggio.
 
 Uso:  ANTHROPIC_KEY=... python tools/agente_eval.py [--modello claude-sonnet-5-5] [--casi id1,id2] [--giri 1]
+      python tools/agente_eval.py --prompt <cartella>    (scrive le domande per simulare l agente senza API)
+      python tools/agente_eval.py --offline <cartella>   (valuta le risposte scritte in <cartella>/<id>.json, senza API)
 
 - Istruzioni e lezioni: GruzzoloDevAndroid/app/src/main/assets/agente.json (le stesse che usa l'app, revisione.js).
 - Casi: tools/agente_casi.json ('dati' come rvAiRequest(), 'attese' = regole da rispettare).
@@ -16,6 +18,7 @@ AG = os.path.join(ROOT, "GruzzoloDevAndroid", "app", "src", "main", "assets", "a
 CASI = os.path.join(ROOT, "tools", "agente_casi.json")
 OUT = os.path.join(ROOT, "docs", "agente_eval.md")
 CACHE = os.path.join(ROOT, "tools", "cache", "agente")
+PREV = os.path.join(ROOT, "GruzzoloDevAndroid", "app", "src", "main", "assets", "previsioni.json")
 ETF = {"SWDA": ("SWDA.MI", "iShares Core MSCI World", 0.20, 115.0), "EIMI": ("EIMI.MI", "iShares Core MSCI EM IMI", 0.18, 38.0),
        "AGGH": ("AGGH.MI", "iShares Core Global Aggregate Bond EUR Hedged", 0.10, 5.5), "XEON": ("XEON.MI", "Xtrackers EUR Overnight Rate Swap", 0.10, 147.0)}
 PROFILI = {"Prudente": ({"SWDA": 22, "EIMI": 3, "AGGH": 50, "XEON": 25}, 3.6, -11, 4), "Moderato": ({"SWDA": 44, "EIMI": 6, "AGGH": 40, "XEON": 10}, 5.6, -25, 7),
@@ -31,6 +34,8 @@ def user_of(dati):
     d = dict(dati)
     d.setdefault("etf_disponibili", {k: {"ticker": t, "nome": n, "ter": ter, "prezzo_eur": px} for k, (t, n, ter, px) in ETF.items()})
     d.setdefault("profili_storico_2004_oggi", {n: {"pesi": w, "rendimento_annuo": r, "calo_peggiore": m, "volatilita": v} for n, (w, r, m, v) in PROFILI.items()})
+    if os.path.exists(PREV):   # i numeri dell'allenamento sulle previsioni (tools/previsioni.py), come nell'app
+        P = json.load(open(PREV, encoding="utf-8")); d.setdefault("previsioni_allenamento", {k: P.get(k) for k in ("lungo", "medio", "notizie", "giorno")})
     return "Dati del portafoglio e del mese (euro):\n" + json.dumps(d, ensure_ascii=False, indent=1)
 
 def call(system, user, model, key):
@@ -59,7 +64,8 @@ def check(caso, j):
     az = [a for a in (j.get("azioni") or []) if isinstance(a, dict)]
     held = {p["ticker"] for p in d.get("posizioni", [])}
     allowed = {v[0] for v in ETF.values()} | held | set(A.get("allowed_extra", []))
-    text = " ".join([str(j.get("sintesi", "")), " ".join(map(str, j.get("rischi") or [])), str((j.get("strategia") or {}).get("perche", "")), " ".join(str(a.get("motivo", "")) for a in az)]).lower()
+    pv = j.get("previsioni") if isinstance(j.get("previsioni"), dict) else {}
+    text = " ".join([str(j.get("sintesi", "")), " ".join(map(str, j.get("rischi") or [])), str((j.get("strategia") or {}).get("perche", "")), " ".join(str(a.get("motivo", "")) for a in az), " ".join(map(str, pv.values()))]).lower()
     st = j.get("strategia") or {}
     # generali
     ok("campi", all(k in j for k in ("sintesi", "voto", "strategia", "azioni", "rischi", "prossimo_controllo_giorni")))
@@ -98,15 +104,22 @@ def check(caso, j):
     for t, mx in A.get("max_buy_eur", {}).items(): ok(f"{t}: compra al massimo {mx} €", sum(a.get("quote", 0) * px.get(norm_t(a.get("ticker")), 0) for a in az if a.get("tipo") == "compra" and norm_t(a.get("ticker")) == t) <= mx)
     for grp in A.get("mention", []): ok("parla di " + "/".join(grp), any(g in text for g in grp))
     for f in A.get("forbid_text", []): ok("non dice «" + f + "»", f not in text)
+    if A.get("prev"):   # previsioni: tutte e quattro, il lungo con un intervallo, il giornaliero che sconsiglia
+        ok("previsioni complete", all(pv.get(k) for k in ("lungo", "medio", "notizie", "breve")), list(pv))
+        ok("lungo periodo con un intervallo", re.search(r"(tra|da)\s*[−+-]?\d[\d,.]*\s*%?\s*(e|a)\s*[−+-]?\d[\d,.]*\s*%", str(pv.get("lungo", "")).lower()) is not None, str(pv.get("lungo", ""))[:120])
+        ok("giornaliero sconsigliato", re.search(r"non conv|sconsigl|meno che tenere|tenere e basta|non vale|perdi", str(pv.get("breve", "")).lower()) is not None, str(pv.get("breve", ""))[:120])
+        ok("nessuna certezza", not re.search(r"sicuramente|garantit|certamente salir|di sicuro", text))
     if "max_voto" in A: ok(f"voto ≤ {A['max_voto']}", isinstance(j.get("voto"), (int, float)) and j["voto"] <= A["max_voto"], j.get("voto"))
     if "min_voto" in A: ok(f"voto ≥ {A['min_voto']}", isinstance(j.get("voto"), (int, float)) and j["voto"] >= A["min_voto"], j.get("voto"))
     return R
 
-def run_case(caso, system, model, key, giro):
+def run_case(caso, system, model, key, giro, offline=None):
     t0 = time.time()
     try:
-        txt, us = call(system, user_of(caso["dati"]), model, key)
-        os.makedirs(CACHE, exist_ok=True); open(os.path.join(CACHE, f"{caso['id']}_{giro}.json"), "w", encoding="utf-8").write(txt)
+        if offline:   # risposte già scritte (simulazione senza API): <cartella>/<id>.json
+            txt, us = open(os.path.join(offline, f"{caso['id']}.json"), encoding="utf-8").read(), {}
+        else: txt, us = call(system, user_of(caso["dati"]), model, key)
+        if not offline: os.makedirs(CACHE, exist_ok=True); open(os.path.join(CACHE, f"{caso['id']}_{giro}.json"), "w", encoding="utf-8").write(txt)
         j = parse(txt); R = check(caso, j)
     except Exception as e:
         j, R, us = {}, [("risposta valida (JSON)", False, str(e)[:160])], {}
@@ -114,13 +127,20 @@ def run_case(caso, system, model, key, giro):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--modello"); ap.add_argument("--casi"); ap.add_argument("--giri", type=int, default=1)
+    ap.add_argument("--offline", help="cartella con le risposte già scritte (<id>.json): niente API"); ap.add_argument("--prompt", help="scrive in questa cartella system e domanda di ogni caso, per simulare l'agente senza API")
     a = ap.parse_args(); key = os.environ.get("ANTHROPIC_KEY")
-    if not key: sys.exit("Manca ANTHROPIC_KEY")
+    if a.prompt:
+        ag = json.load(open(AG, encoding="utf-8")); os.makedirs(a.prompt, exist_ok=True); open(os.path.join(a.prompt, "_system.txt"), "w", encoding="utf-8").write(system_of(ag))
+        for c in json.load(open(CASI, encoding="utf-8"))["casi"]:
+            if not a.casi or c["id"] in a.casi.split(","): open(os.path.join(a.prompt, c["id"] + ".txt"), "w", encoding="utf-8").write(user_of(c["dati"]))
+        sys.exit("domande scritte in " + a.prompt)
+    if not key and not a.offline: sys.exit("Manca ANTHROPIC_KEY (oppure usa --offline <cartella>)")
     ag = json.load(open(AG, encoding="utf-8")); casi = json.load(open(CASI, encoding="utf-8"))["casi"]
     if a.casi: casi = [c for c in casi if c["id"] in a.casi.split(",")]
     model = a.modello or ag.get("modello", "claude-sonnet-5-5"); system = system_of(ag)
     jobs = [(c, g) for g in range(a.giri) for c in casi]
-    with cf.ThreadPoolExecutor(6) as ex: res = list(ex.map(lambda x: run_case(x[0], system, model, key, x[1]), jobs))
+    if a.offline: model = "simulazione (risposte in " + os.path.basename(os.path.normpath(a.offline)) + ")"
+    with cf.ThreadPoolExecutor(6) as ex: res = list(ex.map(lambda x: run_case(x[0], system, model, key, x[1], a.offline), jobs))
     tot = sum(len(R) for _, _, R, _, _ in res); good = sum(ok for _, _, R, _, _ in res for _, ok, _ in R)
     perfect = sum(all(ok for _, ok, _ in R) for _, _, R, _, _ in res)
     tin = sum(u.get("input_tokens", 0) for *_, u in res); tout = sum(u.get("output_tokens", 0) for *_, u in res)

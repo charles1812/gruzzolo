@@ -19,6 +19,20 @@ L'app e le prove leggono lo stesso file: una lezione aggiunta qui vale subito an
 3. **Leggi le risposte sbagliate** e decidi: sbaglia l'agente (→ nuova lezione breve e generale) o è la prova
    troppo rigida (→ correggi l'attesa, scrivendo perché)?
 4. **Rifai la prova**: tieni la lezione solo se il punteggio sale senza rompere altri casi. Alza `versione`.
+5. **Pubblica**: `python tools/pubblica_agente.py "cosa è cambiato"` copia l'agente completo in `agenti/trader-gruzzolo/`
+   e lo porta su GitHub (solo se la versione è salita e l'esame è tutto verde).
+
+### Senza API (simulazione)
+- `python tools/agente_eval.py --prompt tools/cache/agente/sim --casi id1,id2` scrive `_system.txt` e la domanda di ogni caso.
+- Le risposte (JSON come le darebbe l'agente) vanno in `tools/cache/agente/sim/<id>.json`; poi
+  `python tools/agente_eval.py --offline tools/cache/agente/sim` le valuta con le stesse regole.
+- Serve a provare casi e lezioni nuove senza spendere; il giudizio vero resta quello con l'API (stesso modello dell'app).
+
+### Previsioni e notizie
+L'agente riceve anche `previsioni_allenamento` (da `assets/previsioni.json`, scritto da `tools/previsioni.py`) e
+`notizie_recenti` (titoli con il tono), e risponde con il campo `previsioni` (lungo, medio, notizie, breve).
+Con `"prev": true` nelle attese di un caso l'esame controlla che ci siano tutte, che il lungo abbia un intervallo,
+che il giornaliero sia sconsigliato e che non ci siano certezze. Vedi `docs/previsioni.md`.
 
 ## Storia
 
@@ -28,10 +42,12 @@ L'app e le prove leggono lo stesso file: una lezione aggiunta qui vale subito an
 | 1 | 0 | 12 | 112/115, 10/12 | ribilanciava un portafoglio da 1.480 € senza risparmio; i pesi esatti dei profili erano segnati come errore |
 | 2 | 9 | 14 | 259/261, 26/28 | lezioni su basi prima dei pesi, portafogli piccoli, commissioni, tasse ETF, cali, orizzonte breve, IPO, prezzi; nuovi casi: commissioni piccole, IPO appena quotata |
 | 3 | 10 | 14 | **264/264, 28/28** (2 giri) | lezione: se le azioni superano il massimo del test, vendita parziale minima anche pagando le tasse |
+| 4 | 15 | 19 | 70/70 sui 5 casi nuovi (**simulazione senza API**) | previsioni nella risposta (lungo, medio, notizie, breve) con i numeri veri dell'allenamento; lezioni su tassi base e CAPE, rischio a 1–6 mesi, notizie che raccontano il passato, niente day trading, niente leva o crypto; casi nuovi: panico da notizie, euforia e leva, day trading, previsione a 10 anni, VIX alto con fondo vuoto. Da rifare con l'API su tutti i 19 casi |
 
 ## Idee per i prossimi giri
 
 - Casi con titoli in perdita (minusvalenze), con più conti, con stipendio variabile, con un obiettivo di casa tra 5 anni.
 - Casi «trappola»: l'utente chiede di comprare crypto, leva, prodotti pre-IPO, o di vendere tutto dopo una notizia.
 - Confronto tra modelli (`--modello claude-opus-5-5`) su qualità e costo.
+- v4 con l'API su tutti i 19 casi (le lezioni nuove non devono rompere i 14 vecchi).
 - Prove con i dati veri dell'utente (esportati dall'app, senza nomi).

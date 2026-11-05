@@ -1,0 +1,50 @@
+{
+ "aggiornato": "2026-11-05",
+ "lungo": {
+  "anni10_positivi": 0.89,
+  "media_reale": 0.0701,
+  "peggiore": -0.0592,
+  "migliore": 0.1996,
+  "cape": 30.8,
+  "cape_mese": "2023-09",
+  "prev_reale": 0.0224,
+  "lo": -0.0402,
+  "hi": 0.0823
+ },
+ "medio": {
+  "skill_max": 0.06,
+  "sopra_media10": {
+   "n": 1188,
+   "media": 0.0093,
+   "vol": 0.0336,
+   "mesi_sotto_meno5": 0.0337,
+   "su": 0.6271
+  },
+  "sotto_media10": {
+   "n": 671,
+   "media": -0.0031,
+   "vol": 0.0495,
+   "mesi_sotto_meno5": 0.1267,
+   "su": 0.4814
+  },
+  "vix30": {
+   "n": 33,
+   "media": -0.0115,
+   "vol": 0.0663,
+   "su": 0.4545
+  }
+ },
+ "notizie": {
+  "settimane": 400,
+  "corr_stessa": 0.45,
+  "corr_dopo1": 0.01,
+  "corr_dopo4": 0.0,
+  "skill": -0.009
+ },
+ "giorno": {
+  "spx_netto": 0.0742,
+  "spx_tieni_netto": 0.1041,
+  "anni": 16.8,
+  "skill_max": 0.0009
+ }
+}

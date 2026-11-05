@@ -188,6 +188,38 @@ function fcHtml(){
     <p class="bnote" style="margin:6px 0 0"><b>In un anno:</b> ${Object.keys(repTot).length?`🔁 Replay ${q(repTot)} · `:""}📈 a mano ${q(tot)||"niente"}${fundSum>=1?` · 🛟 ${m0(fundSum)} sul conto`:""}${ipoSum>=1?` · 🚀 ${m0(ipoSum)} riserva IPO`:""}. Se cambi Budget, strategia o Replay si ricalcola.</p></details>`;
 }
 
+/* ---------- previsioni: cosa aspettarsi (allenamento senza API in tools/previsioni.py → assets/previsioni.json) ----------
+   Lungo (10 anni), medio (1–6 mesi), notizie e giornaliero: numeri veri e quanto ci si può fidare. Con la chiave le scrive
+   l'agente AI (campo «previsioni» della risposta), che riceve questi numeri e le ultime notizie; senza chiave le scrive il sistema integrato. */
+let PREV=null; fetch("previsioni.json").then(r=>r.json()).then(j=>{ PREV=j; try{ rvMount(); }catch(e){} }).catch(()=>{});
+function prvNews(){ const A=[]; try{ ((SC.news&&SC.news.items)||[]).forEach(it=>(it.articles||[]).forEach(a=>A.push({ titolo:String(a.title||"").slice(0,140), tono:a.s!=null?Math.round(a.s*100)/100:null, data:a.ts?new Date(a.ts).toISOString().slice(0,10):null, tema:it.t==="_mercati"?"mercati":shortName(it.t) }))); }catch(e){}
+  A.sort((a,b)=>String(b.data).localeCompare(String(a.data))); return A.slice(0,12); }
+function prvPc(x, d){ return (x>=0?"+":"−")+Math.abs(x*100).toLocaleString("it-IT",{ maximumFractionDigits:d==null?1:d })+"%"; }
+function prvBuiltin(){
+  const P=PREV; if(!P) return null; const L=P.lungo, M=P.medio, N=P.notizie, G=P.giorno, nw=prvNews(), tn=nw.filter(x=>x.tono!=null), tone=tn.length?tn.reduce((a,x)=>a+x.tono,0)/tn.length:null;
+  return {
+    lungo:`Dal 1881 i 10 anni in borsa (azioni USA, dividendi compresi, oltre l'inflazione) sono finiti in guadagno ${Math.round(L.anni10_positivi*100)} volte su 100, in media ${prvPc(L.media_reale)} l'anno. Oggi le azioni USA sono care (CAPE ${String(L.cape).replace(".",",")}): per i prossimi 10 anni aspettati meno, circa ${prvPc(L.prev_reale)} l'anno oltre l'inflazione, 8 casi su 10 tra ${prvPc(L.lo)} e ${prvPc(L.hi)}. Le azioni del resto del mondo costano meno.`,
+    medio:`Su 1–6 mesi la direzione non la sa nessuno: le regole migliori battono «come al solito» di pochi punti (al massimo ${Math.round(M.skill_max*100)}%). Servono per il rischio: quando la borsa sta sotto la media degli ultimi 10 mesi i mesi brutti (sotto −5%) diventano ${Math.round(M.sotto_media10.mesi_sotto_meno5*100)} su 100 invece di ${Math.round(M.sopra_media10.mesi_sotto_meno5*100)}. Allora conta avere il fondo emergenza pieno, non vendere.`,
+    notizie:N?`Le notizie raccontano quello che è già successo: il loro tono va con la borsa della stessa settimana (${N.corr_stessa>=0?"+":""}${String(N.corr_stessa).replace(".",",")}) e quasi per niente con quelle dopo (${N.corr_dopo1>=0?"+":""}${String(N.corr_dopo1).replace(".",",")}). ${tone!=null?`Il tono delle tue notizie oggi è ${tone>0.15?"positivo":tone<-0.15?"negativo":"neutro"}: non cambia il piano.`:"Non cambiano il piano."}`:null,
+    breve:`Comprare e vendere ogni giorno non conviene: sull'S&P 500 dal 2010 la regola migliore avrebbe reso ${prvPc(G.spx_netto)} l'anno dopo costi e tasse, contro ${prvPc(G.spx_tieni_netto)} tenendo e basta.` };
+}
+if(typeof rvAiRequest==="function"){ const _rq=rvAiRequest; rvAiRequest=function(){ const q=_rq.apply(this, arguments);
+  try{ const i=q.user.indexOf("{"); const d=JSON.parse(q.user.slice(i));
+    if(PREV) d.previsioni_allenamento={ lungo:PREV.lungo, medio:PREV.medio, notizie:PREV.notizie, giorno:PREV.giorno };
+    const nw=prvNews(); if(nw.length) d.notizie_recenti=nw;
+    q.user=q.user.slice(0,i)+JSON.stringify(d,null,1); }catch(e){}
+  return q; }; }
+let RV_LASTJ=null;
+if(typeof rvParse==="function"){ const _pp=rvParse; rvParse=function(){ const j=_pp.apply(this, arguments); RV_LASTJ=j; return j; }; }
+if(typeof rvSave==="function"){ const _rs2=rvSave; rvSave=function(R){ if(R.src==="ai" && RV_LASTJ && RV_LASTJ.previsioni && typeof RV_LASTJ.previsioni==="object") R.prev=RV_LASTJ.previsioni; return _rs2.call(this, R); }; }
+function prvHtml(R){
+  const ai=R && R.src==="ai" && R.prev, P=ai?R.prev:prvBuiltin(); if(!P) return "";
+  const rows=[["lungo","10 anni"],["medio","1–6 mesi"],["notizie","notizie"],["breve","giorno per giorno"]].filter(([k])=>P[k]);
+  return `<div class="prv"><div class="hud-label" style="margin:10px 0 4px">previsioni // cosa aspettarsi${ai?" · agente AI":" · dati veri"}</div>${rows.map(([k,l])=>`<div class="prv-r"><b>${l}</b><span>${esc(String(P[k]))}</span></div>`).join("")}</div>`;
+}
+if(typeof rvHtml==="function"){ const _rh=rvHtml; rvHtml=function(){ let h=_rh.apply(this, arguments); const R=PL.review&&PL.review.R;
+  let x=""; try{ x=prvHtml(R); }catch(e){} const k=h.indexOf('<p class="rv-auto">'); return k>=0?h.slice(0,k)+x+h.slice(k):h; }; }
+
 /* al primo giro: i pezzi del Replay e i costi dell'AI */
 try{ rpExtra(); }catch(e){}
 try{ aiCostMount(); }catch(e){}
