@@ -15,11 +15,11 @@ Non fa ordini veri: gli acquisti e le vendite li fa l'utente dalla sua banca.
 | Scheda | Cosa c'è |
 |---|---|
 | 01 Budget | soldi che restano, i quattro budget (Tempo libero, Weekend, Spesa, Ricorrenti), spese dalle notifiche di Google Wallet e dagli SMS Fineco, prestiti, primo mese |
-| 02 Portafoglio | valore, **un solo grafico in cima** (sfera con il tastino «legenda», monete o altri 8), posizioni, serbatoio del mese, **📋 Cosa comprare** (mese per mese: ✋ tu, 🔁 Replay, 🛟 conto), Replay (riga che si apre), Piano (metodo in 7 passi, strategia bloccata, tasto **🤖 Agente e dati**, riserva IPO), idee, Follia, notizie |
-| Agente e dati | pagina a parte (`page-agente`, dal tasto nel Portafoglio): controllo dell'agente con i consigli in frasi, previsioni, e con la strategia bloccata rischio, backtest, previsione, confronto e regole |
+| 02 Portafoglio | valore, **un solo grafico in cima** (sfera con il tastino «legenda», monete o altri 8), posizioni, serbatoio del mese, **📋 Cosa comprare** (mese per mese: ✋ tu, 🔁 Replay, 🛟 conto), **consigli dell'agente** (salute, sintesi, cosa ti consiglia, proposta di strategia), Replay (riga che si apre), Piano (metodo in 7 passi, strategia bloccata, riserva IPO), idee, Follia, notizie |
+| 04 Dati › 🤖 Agente | previsioni, dettagli del controllo (controllo integrato, rischi, registro) e, con la strategia bloccata, rischio, backtest, previsione, confronto e regole (`agRender`, `rvHtml("dati")`) |
 | ＋ | aggiungi spesa / entrata / prestito |
 | 03 Sfide | sfide di risparmio |
-| 04 Dati | costo della vita (Eurostat, carburanti), i miei dati |
+| 04 Dati | i miei dati, costo della vita (Eurostat, carburanti), 🤖 Agente |
 
 ## Come funziona il Portafoglio (il cuore)
 1. **Budget → mese**: `modePlan(B.mode).save` = quanto mettere da parte (le rate dei prestiti si prendono dal tempo libero o dal risparmio con `B.loanSplit`).
@@ -79,7 +79,8 @@ Motore sul server (`server/motore/`, PHP + cron notturno): segnali, Monte Carlo,
 | 04/11/2026 | — | grafica HUD, prestiti e mutui, Strategia (backtest dal 2004), agente trader-gruzzolo |
 | 05/11/2026 | 1242–1333 | 8 grafici della strategia, controllo dell'agente AI, Piano dentro il Portafoglio, riserva IPO, agente allenato (264/264 regole) |
 | 05/11/2026 | 1458 | Replay in una sezione, strategia bloccata, controllo automatico + costi AI, prossimi 12 mesi, metodo in 7 passi, sfera a spicchi con legenda, + e − sempre attivi |
-| 05/11/2026 | 1554–1600 | Portafoglio più ordinato: legenda e Replay come tastini, «Cosa comprare» mese per mese, pagina «Agente e dati», consigli dell'agente in frasi, limite dei liquidi nel test (rifare il test non cambia la strategia bloccata); agente v5 (regola dei liquidi) |
+| 05/11/2026 | 1607 | consigli dell'agente dentro il Portafoglio (sotto «Cosa comprare»); previsioni, backtest e dettagli del controllo in Dati › Agente |
+| 05/11/2026 | 1554–1558 | Portafoglio più ordinato: legenda e Replay come tastini, «Cosa comprare» mese per mese, pagina «Agente e dati», consigli dell'agente in frasi, limite dei liquidi nel test (rifare il test non cambia la strategia bloccata); agente v5 (regola dei liquidi) |
 | 05/11/2026 | 1539 | agente v4 allenato senza API su previsioni e notizie (lungo, medio, giornaliero, dati veri dal 1871), previsioni nel controllo dell'app, diario delle previsioni, cartella `agenti/` pubblicata su GitHub, `docs/PROGETTO.md` e `CLAUDE.md` |
 
 ## Da fare / idee

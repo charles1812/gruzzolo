@@ -266,7 +266,10 @@ function dtView(v){
   document.querySelectorAll("[data-dtv]").forEach(b=>b.classList.toggle("on",b.dataset.dtv===DTV));
   const m=document.getElementById("dtMine"), d=document.getElementById("datiBody"); if(!m||!d) return;
   m.style.display=DTV==="mine"?"":"none"; d.style.display=DTV==="vita"?"":"none";
-  if(DTV==="mine"){ if(typeof phRender==="function") phRender(); if(typeof renderStat==="function") renderStat(); } else renderDati(false);
+  const ag=document.getElementById("dtAgente"); if(ag) ag.style.display=DTV==="agente"?"":"none";
+  if(DTV==="mine"){ if(typeof phRender==="function") phRender(); if(typeof renderStat==="function") renderStat(); }
+  else if(DTV==="agente"){ if(typeof agRender==="function") agRender(); }      // agente: previsioni, controllo, backtest (metodo.js)
+  else renderDati(false);
 }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-dtv]"); if(b){ dtView(b.dataset.dtv); window.scrollTo(0,0); } });
 (function(){ const st=window.showTab; if(typeof st!=="function") return;

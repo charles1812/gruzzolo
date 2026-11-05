@@ -106,15 +106,16 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-rv]"); if
   else if(a==="no" && PL.review && PL.review.R){ PL.review.R.pesiNo=true; plSave(); rvMount(); toast("Ok: tieni la tua strategia"); } });
 
 function rvDue(){ const r=PL.review; if(!r) return 0; const d=Math.round((today0()-parseYmd(r.date))/86400000); return (r.R.next||RV_EVERY)-d; }
-function rvHtml(){
-  const r=PL.review, R=r&&r.R, hasK=!!(typeof settings!=="undefined" && settings.anthropicKey), due=rvDue(), late=r&&due<=0;
+function rvHtml(part){
+  const D=part==="dati", r=PL.review, R=r&&r.R, hasK=!!(typeof settings!=="undefined" && settings.anthropicKey), due=rvDue(), late=r&&due<=0;
   const icon={ warn:["!","var(--amber)"], ok:["✓","var(--teal)"], info:["·","var(--cyan)"] };
-  let h=`<section id="rvHost"><div class="hud-panel ${late?"acc-amber":"acc-violet"}" style="--i:7;margin-top:10px"><div class="hud-ph"><span class="t">controllo // agente</span><span class="tag">${hasK?"AI collegata":"sistema integrato"}</span></div>`;
-  h+=`<div class="rv-top"><div><span class="hud-label">ultimo controllo</span><b>${r?esc(fmtDateIt(r.date))+" · "+(R.src==="ai"?"agente AI":"integrato"):"mai"}</b></div>
+  let h=`<section id="${D?"rvData":"rvHost"}"><div class="hud-panel ${late&&!D?"acc-amber":"acc-violet"}" style="--i:7;margin-top:10px"><div class="hud-ph"><span class="t">${D?"agente // previsioni e controllo":"consigli // agente"}</span><span class="tag">${hasK?"AI collegata":"sistema integrato"}</span></div>`;
+  if(D) h+=`<!--prv-->`;
+  if(!D) h+=`<div class="rv-top"><div><span class="hud-label">ultimo controllo</span><b>${r?esc(fmtDateIt(r.date))+" · "+(R.src==="ai"?"agente AI":"integrato"):"mai"}</b></div>
     <div><span class="hud-label">prossimo</span><b class="${late?"c-amber":""}">${!r?"adesso":late?"è ora":"tra "+due+" giorni"}</b></div>
     ${R&&R.voto?`<div><span class="hud-label">salute</span><b class="num ${R.voto>=7?"c-teal":R.voto>=5?"c-amber":"c-red"}">${R.voto}/10</b></div>`:""}</div>`;
-  if(RV_BUSY || RV_LOG.length) h+=`<div class="rv-log">${RV_BUSY?`<div class="hud-act"><i></i></div>`:""}${RV_LOG.slice(-5).map(([t,g,s])=>`<div><span class="dim">${t}</span> <b class="${g==="ERR"?"c-red":g==="SYS"?"c-violet":"c-cyan"}">${g}</b> ${esc(s)}</div>`).join("")}${RV_BUSY?`<span class="rv-cur">▮</span>`:""}</div>`;
-  if(R){
+  if(RV_BUSY || (D && RV_LOG.length)) h+=`<div class="rv-log">${RV_BUSY?`<div class="hud-act"><i></i></div>`:""}${RV_LOG.slice(-5).map(([t,g,s])=>`<div><span class="dim">${t}</span> <b class="${g==="ERR"?"c-red":g==="SYS"?"c-violet":"c-cyan"}">${g}</b> ${esc(s)}</div>`).join("")}${RV_BUSY?`<span class="rv-cur">▮</span>`:""}</div>`;
+  if(R && !D){
     h+=`<p class="rv-sum">${esc(R.sintesi)}</p>`;
     // cosa fare questo mese, in frasi: «Compra 2 quote di SWDA (MSCI World) · circa 262 €»
     const ql=n=>n===1?"quota":"quote", nm=t=>{ const k=Object.keys(ASSETS).find(x=>ASSETS[x].t===t); return k?ASSETS[k].n:(holdings.find(h=>h.ticker===t)||{}).name||""; },
@@ -131,11 +132,13 @@ function rvHtml(){
         <div class="rv-cmp">${ST_KEYS.filter(k=>R.pesi[k]>0||R.T[k]>0).map(k=>`<div><span style="color:${ST_COL[k]}">${shortName(ASSETS[k].t)}</span><span class="num">${R.T[k]}% → <b>${R.pesi[k]}%</b></span></div>`).join("")}</div>
         ${R.perche?`<p class="pn-note">${esc(R.perche)}</p>`:""}
         <div class="rv-pb"><button class="hud-btn" data-rv="apply" style="--c:var(--amber)">accetta</button><button class="hud-btn" data-rv="no">no, tengo ${esc(pn)}</button></div></div>`; }
+  }
+  if(R && D){
     h+=`<div class="hud-label" style="margin:10px 0 4px">controllo integrato</div>${R.findings.map(f=>`<div class="st-rule"><b style="color:${icon[f.l][1]}">${icon[f.l][0]}</b><div><span>${esc(f.t)}</span><small>${esc(f.d)}</small></div></div>`).join("")}`;
     if(R.rischi&&R.rischi.length) h+=`<div class="hud-label" style="margin:8px 0 4px">rischi</div>${R.rischi.map(x=>`<div class="rv-r">⚠ ${esc(x)}</div>`).join("")}`;
   }
-  h+=`<p class="rv-auto">${RV_BUSY?"Controllo in corso…":hasK?`🤖 Automatico: l'agente AI lo rifà da solo quando è ora e ogni volta che confermi una strategia.${R&&R.cost!=null&&typeof aiEur==="function"?` Ultimo controllo: <b class="num">${aiEur(R.cost)}</b> (i costi sono in Impostazioni).`:""}`:`⚙️ Automatico: il sistema integrato ricontrolla da solo. Con la chiave Anthropic nelle Impostazioni lo fa l'agente AI.`}</p>
-    <p class="pn-note">Le vendite e gli acquisti li fai tu dalla tua banca. Non è consulenza: l'agente propone, tu decidi.</p></div></section>`;
+  if(!D) h+=`<p class="rv-auto">${RV_BUSY?"Controllo in corso…":hasK?`🤖 Automatico: l'agente AI lo rifà da solo quando è ora e ogni volta che confermi una strategia.${R&&R.cost!=null&&typeof aiEur==="function"?` Ultimo controllo: <b class="num">${aiEur(R.cost)}</b> (i costi sono in Impostazioni).`:""}`:`⚙️ Automatico: il sistema integrato ricontrolla da solo. Con la chiave Anthropic nelle Impostazioni lo fa l'agente AI.`}</p><button class="add rv-more" data-ag="open">📊 Previsioni, backtest e dettagli del controllo in Dati ▸</button>`;
+  h+=`<p class="pn-note">Le vendite e gli acquisti li fai tu dalla tua banca. Non è consulenza: l'agente propone, tu decidi.</p></div></section>`;
   return h;
 }
-function rvMount(){ const el=document.getElementById("rvHost"); if(el) el.outerHTML=rvHtml(); }
+function rvMount(){ const el=document.getElementById("rvHost"); if(el) el.outerHTML=rvHtml(); const d=document.getElementById("rvData"); if(d) d.outerHTML=rvHtml("dati"); }

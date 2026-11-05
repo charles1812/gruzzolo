@@ -225,10 +225,10 @@ if(typeof rvSave==="function"){ const _rs2=rvSave; rvSave=function(R){ if(R.src=
 function prvHtml(R){
   const ai=R && R.src==="ai" && R.prev, P=ai?R.prev:prvBuiltin(); if(!P) return "";
   const rows=[["lungo","10 anni"],["medio","1–6 mesi"],["notizie","notizie"],["breve","giorno per giorno"]].filter(([k])=>P[k]);
-  return `<div class="prv"><div class="hud-label" style="margin:10px 0 4px">previsioni // cosa aspettarsi${ai?" · agente AI":" · dati veri"}</div>${rows.map(([k,l])=>`<div class="prv-r"><b>${l}</b><span>${esc(String(P[k]))}</span></div>`).join("")}</div>`;
+  return `<div class="prv"><div class="hud-label" style="margin:4px 0 4px">previsioni // cosa aspettarsi${ai?" · agente AI":" · dati veri"}</div>${rows.map(([k,l])=>`<div class="prv-r"><b>${l}</b><span>${esc(String(P[k]))}</span></div>`).join("")}</div>`;
 }
-if(typeof rvHtml==="function"){ const _rh=rvHtml; rvHtml=function(){ let h=_rh.apply(this, arguments); const R=PL.review&&PL.review.R;
-  let x=""; try{ x=prvHtml(R); }catch(e){} const k=h.indexOf('<p class="rv-auto">'); return k>=0?h.slice(0,k)+x+h.slice(k):h; }; }
+if(typeof rvHtml==="function"){ const _rh=rvHtml; rvHtml=function(part){ let h=_rh.apply(this, arguments); if(part!=="dati") return h; const R=PL.review&&PL.review.R;
+  let x=""; try{ x=prvHtml(R); }catch(e){} return h.replace("<!--prv-->", x); }; }
 
 /* ---------- cosa comprare: elenco mese per mese (sotto il serbatoio) ----------
    ✋ = lo compri tu dal serbatoio · 🔁 = lo compra il Replay da solo · 🛟 = va sul conto · 🚀 = riserva IPO */
@@ -252,27 +252,26 @@ function buyHtml(){
     h+=`<p class="bnote" style="margin:6px 0 0"><b>In un anno</b>: ✋ ${q(tot)||"niente"}${F.rep.length?` · 🔁 ${q(Object.fromEntries(F.rep.map(x=>[x.t,x.n*12])))}`:""}. Prezzi di oggi, ${m0(F.S)} al mese dal Budget.</p>`; }
   return h+`</div>`;
 }
-function mountBuy(){ const el=document.getElementById("buyHost"); if(el) try{ el.innerHTML=buyHtml(); }catch(e){ el.innerHTML=""; } }
+function mountBuy(){ const el=document.getElementById("buyHost"); if(!el) return; let h=""; try{ h=buyHtml(); }catch(e){} try{ if(typeof rvHtml==="function" && PL.prof) h+=rvHtml(); }catch(e){} el.innerHTML=h; }
 if(typeof mountPot==="function"){ const _mp=mountPot; mountPot=function(){ const r=_mp.apply(this, arguments); mountBuy(); return r; }; }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-buy]"); if(!b) return; BUY_ALL=!BUY_ALL; mountBuy(); });
 
 /* ---------- pagina «Agente e dati»: controllo dell'agente, previsioni, rischio, backtest, confronto, regole ---------- */
-function agBtnHtml(){ const r=PL.review, R=r&&r.R, hasK=!!(settings&&settings.anthropicKey);
-  return `<button class="card ag-btn" data-ag="open"><span class="ag-i">🤖</span><span class="ag-t"><b>Agente e dati</b><small>${R&&R.voto?`salute ${R.voto}/10 · `:""}${hasK?"agente AI":"sistema integrato"} · previsioni · backtest · confronto</small></span><span class="pot-c">▸</span></button>`; }
+function agBtnHtml(){ return ""; }      // i consigli dell'agente stanno nel Portafoglio, subito sotto «Cosa comprare» (mountBuy)
 function agRender(){
   const el=document.getElementById("agBody"); if(!el) return;
   if(PL.locked && !ST_MORE){ try{ renderPiano(); }catch(e){} }
-  let h=`<div class="ag-hd"><button class="add" data-ag="back">‹ Portafoglio</button><b>🤖 Agente e dati</b></div>`;
-  try{ h+=rvHtml(); }catch(e){}
+  let h="";
+  try{ h+=rvHtml("dati"); }catch(e){}
   h+= PL.locked && ST_MORE ? `<div class="hud-label" style="margin:16px 4px 4px">la tua strategia nei numeri</div><section id="stMore">${ST_MORE}</section>`
     : `<p class="bnote" style="margin:12px 4px">Mentre scegli la strategia, rischio, backtest e confronto stanno nel Portafoglio sotto le strategie.</p>`;
   h+=`<p class="pn-disc">Backtest con i rendimenti mensili veri dal 2004; previsioni allenate sui dati veri (docs/previsioni.md). Non sono previsioni certe né consulenza.</p>`;
   el.innerHTML=h;
 }
-document.addEventListener("click",e=>{ const b=e.target.closest("[data-ag]"); if(!b) return;
-  if(b.dataset.ag==="open"){ showTab("agente"); window.scrollTo(0,0); } else { showTab("portafoglio"); const t=document.getElementById("planBody"); if(t) setTimeout(()=>t.scrollIntoView({ block:"start" }),50); } });
-if(typeof showTab==="function"){ const _st=showTab; showTab=function(n){ const r=_st.apply(this, arguments); if(n==="agente"){ agRender(); setTimeout(rvAuto, 800); } return r; }; }
-const agActive=()=>{ const pg=document.getElementById("page-agente"); return pg && pg.classList.contains("active"); };
+function agOpen(){ DTV="agente"; showTab("dati"); if(typeof dtView==="function") dtView("agente"); window.scrollTo(0,0); }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-ag]"); if(!b) return; agOpen(); });
+if(typeof showTab==="function"){ const _st=showTab; showTab=function(n){ if(n==="agente"){ DTV="agente"; n="dati"; } return _st.call(this, n); }; }
+const agActive=()=>{ const pg=document.getElementById("page-dati"), ag=document.getElementById("dtAgente"); return pg && pg.classList.contains("active") && ag && ag.style.display!=="none"; };
 if(typeof stRefresh==="function"){ const _sr=stRefresh; stRefresh=function(){ const r=_sr.apply(this, arguments); if(agActive()) agRender(); return r; }; }
 if(typeof renderPiano==="function"){ const _rp2=renderPiano; renderPiano=function(){ const y=window.scrollY, r=_rp2.apply(this, arguments); if(agActive()){ agRender(); window.scrollTo(0,y); } return r; }; }
 
